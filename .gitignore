@@ -1,0 +1,9 @@
+tmp/*
+old/*
+*.pyc
+*.swp
+*.pdf
+*.mwb
+*~
+doc/build/*
+
