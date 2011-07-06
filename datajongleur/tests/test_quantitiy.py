@@ -1,5 +1,11 @@
 import unittest
-from datajongleur.quantity import Quantity
+from datajongleur.ezquantity import EZQuantity as Quantity
+
+def quantity_initialization(self, test_class):
+  self.assertRaises(AssertionError, Quantity, *[1,1])
+  self.assertRaises(AssertionError, Quantity, *["1","1"])
+  self.assertRaises(TypeError, Quantity, 1)
+  self.assertRaises(TypeError, Quantity, None)
 
 class TestQuantity(unittest.TestCase):
 
@@ -11,10 +17,7 @@ class TestQuantity(unittest.TestCase):
     self.e = Quantity(3,"mV")
 
   def test_initialization(self):
-    self.assertRaises(AssertionError, Quantity, *[1,1])
-    self.assertRaises(AssertionError, Quantity, *["1","1"])
-    self.assertRaises(TypeError, Quantity, 1)
-    self.assertRaises(TypeError, Quantity, None)
+    quantity_initialization(self, Quantity)
 
   def test_relation(self):
     def compare(a, b):
@@ -32,17 +35,6 @@ class TestQuantity(unittest.TestCase):
     self.assertEqual(self.a * self.c, Quantity(2, "mV * mV"))
     self.assertEqual(self.e // self.c, Quantity(1, "mV / mV"))
     self.assertEqual(self.e % self.c, Quantity(1, "mV / mV"))
-    self.assertEqual(divmod(self.e, self.c),
-        "Not implemented.")
-    self.assertEqual(self.e ** self.c,
-        "Not implemented. Use ``Quantity(x**y, 'Unit')")
-    self.assertEqual(self.e << self.c,
-        "Not implemented. Use ``Quantity(x<<y, 'Unit')")
-    self.assertEqual(self.e >> self.c,
-        "Not implemented. Use ``Quantity(x>>y, 'Unit')")
-    self.assertEqual(self.e & self.c,"Not implemented.")
-    self.assertEqual(self.e ^ self.c,"Not implemented.")
-    self.assertEqual(self.e | self.c,"Not implemented.")
 
 if __name__=='__main__':
   unittest.main()
