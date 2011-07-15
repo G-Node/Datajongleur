@@ -1,4 +1,4 @@
-class BaseValueObject(object):
+class BaseValue(object):
   def set_immutable_attribute(self, value):
     raise NotImplementedError
   def __hash__(self):
@@ -9,9 +9,9 @@ class BaseValueObject(object):
     raise NotImplementedError
 
 
-class BaseQuantity(BaseValueObject):
-  def __init__(self, amount, units):
-    raise NotImplementedError
+class BaseQuantity(BaseValue):
+  #def __init__(self, amount, units):
+  #  raise NotImplementedError
 
   # Required methods by general ``quantity``
   # ----------------------------------------
@@ -81,21 +81,12 @@ class BaseQuantity(BaseValueObject):
 class Moment(BaseQuantity):
   def getTime(self):
     raise NotImplementedError
-  def setTime(self, value):
-    raise NotImplementedError
 
 
-class Period(BaseQuantity):
-  def getTStart(self):
+class Interval(BaseQuantity):
+  def getStart(self):
     raise NotImplementedError
-  def getTStop(self):
+  def getStop(self):
     raise NotImplementedError
-  def getDuration(self):
+  def getLength(self):
     raise NotImplementedError
-
-    raise NotImplementedError
-    raise NotImplementedError
-    raise NotImplementedError
-    raise NotImplementedError
-
-

@@ -1,13 +1,50 @@
-from interfaces import BaseQuantity
+import interfaces as i
+import numpy as np
+import quantities as pq
 
-class EZQuantity(BaseQuantity):
+############
+# Quantities
+############
+
+class QuantitiesAdapter(pq.Quantity, i.BaseQuantity):
+  def getAmount(self):
+    return self.base
+  amount = property(getAmount)
+
+  def getUnits(self):
+    return self.dimensionality.string
+  units = property(getUnits)
+
+######
+# Unum
+######
+
+def getUnumAmount(quantity):
+  return quantity.asNumber()
+
+def getUnumUnits(quantity):
+  return quantity.strUnit()
+
+def adjustUnum():
+  from unum import Unum as U
+  U.getAmount = getUnumAmount
+  U.amount = property(getUnumAmount)
+  U.getUnits = getUnumUnits
+  U.units = property(getUnumUnits)
+
+
+############
+# EZQuantity
+############
+
+class EZQuantity(i.BaseQuantity):
   def __init__(self, amount, units):
     self.checkParameters(amount, units)
     self._amount = amount
     self._units = units
 
   def checkParameters(self, amount, units):
-      assert isinstance(amount, (float,int,long,complex)),\
+      assert isinstance(amount, (float,int,long,complex,np.ndarray)),\
           'The first argument has to be a NUMBER (not %s).' %(
               type(amount))
       assert isinstance(units, (str, unicode)),\
@@ -52,6 +89,10 @@ class EZQuantity(BaseQuantity):
     return self.__class__(
         self.amount * other.amount, self.units + " * " + other.units)
 
+  def __div__(self, other): # /
+    return self.__class__(
+        self.amount / other.amount, self.units + " / " + other.units)
+
   def __floordiv__(self, other): # //
     self.assertNoDivZero(other)
     return self.__class__(
@@ -84,7 +125,3 @@ class EZQuantity(BaseQuantity):
     return '%s(%r, %r)' %(self.__class__.__name__, self._amount, self._units)
 
 
-if __name__=='__main__':
-  a = EZQuantity(1, "mV")
-  b = EZQuantity(1, "mV")
-  c = EZQuantity(2, "mV")

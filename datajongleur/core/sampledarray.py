@@ -1,5 +1,7 @@
 import numpy as np
 
+import Quantities as Quantities
+
 class SampledArray(np.ndarray):
   def create_base_object(cls, input_array, sample_unit):
     """
