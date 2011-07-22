@@ -1,6 +1,6 @@
-class BaseValue(object):
-  def set_immutable_attribute(self, value):
-    raise NotImplementedError
+class Value(object):
+  def setImmutableAttribute(self, value):
+    raise AttributeError, "Value object is not writable"
   def __hash__(self):
     raise NotImplementedError
   def __str__(self):
@@ -9,7 +9,7 @@ class BaseValue(object):
     raise NotImplementedError
 
 
-class BaseQuantity(BaseValue):
+class Quantity(Value):
   #def __init__(self, amount, units):
   #  raise NotImplementedError
 
@@ -78,15 +78,25 @@ class BaseQuantity(BaseValue):
     return self.cmp(self, other)
 
 
-class Moment(BaseQuantity):
-  def getTime(self):
-    raise NotImplementedError
-
-
-class Interval(BaseQuantity):
+class Interval(Value):
   def getStart(self):
     raise NotImplementedError
   def getStop(self):
     raise NotImplementedError
   def getLength(self):
+    raise NotImplementedError
+
+
+class SampledSignal(Quantity):
+  def getSignal(self):
+    raise NotImplementedError
+  def getSignalBase(self):
+    raise NotImplementedError
+  def getNSamplingPoints(self):
+    raise NotImplementedError
+
+class RegularlySampledSignal(SampledSignal):
+  def getSamplingRate(self):
+    raise NotImplementedError
+  def getStepSize(self):
     raise NotImplementedError

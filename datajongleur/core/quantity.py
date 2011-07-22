@@ -6,9 +6,9 @@ import quantities as pq
 # Quantities
 ############
 
-class QuantitiesAdapter(pq.Quantity, i.BaseQuantity):
+class QuantitiesAdapter(pq.Quantity, i.Quantity):
   def getAmount(self):
-    return self.base
+    return self.magnitude
   amount = property(getAmount)
 
   def getUnits(self):
@@ -37,7 +37,7 @@ def adjustUnum():
 # EZQuantity
 ############
 
-class EZQuantity(i.BaseQuantity):
+class EZQuantity(i.Quantity):
   def __init__(self, amount, units):
     self.checkParameters(amount, units)
     self._amount = amount
