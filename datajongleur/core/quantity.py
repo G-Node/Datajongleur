@@ -2,11 +2,21 @@ import interfaces as i
 import numpy as np
 import quantities as pq
 
-############
-# Quantities
-############
+###################
+# QuantitiesAdapter
+###################
 
 class QuantitiesAdapter(pq.Quantity, i.Quantity):
+  def __new__(cls, data, units='', dtype=None, copy=True):
+    obj = pq.Quantity.__new__(cls, data, units, dtype, copy)
+    obj.setflags(write=False) # Immutable
+    # -----------------------------------------------------------------------
+    # The following line won't be necessary after a change in 
+    # the python-quantities package'
+    #cls.adjust_return_types(cls, pq.Quantity) #PR: not nice to use pq.Quantity
+    # -----------------------------------------------------------------------
+    return obj
+
   def getAmount(self):
     return self.magnitude
   amount = property(getAmount)
@@ -15,113 +25,53 @@ class QuantitiesAdapter(pq.Quantity, i.Quantity):
     return self.dimensionality.string
   units = property(getUnits)
 
-######
-# Unum
-######
-
-def getUnumAmount(quantity):
-  return quantity.asNumber()
-
-def getUnumUnits(quantity):
-  return quantity.strUnit()
-
-def adjustUnum():
-  from unum import Unum as U
-  U.getAmount = getUnumAmount
-  U.amount = property(getUnumAmount)
-  U.getUnits = getUnumUnits
-  U.units = property(getUnumUnits)
-
-
-############
-# EZQuantity
-############
-
-class EZQuantity(i.Quantity):
-  def __init__(self, amount, units):
-    self.checkParameters(amount, units)
-    self._amount = amount
-    self._units = units
-
-  def checkParameters(self, amount, units):
-      assert isinstance(amount, (float,int,long,complex,np.ndarray)),\
-          'The first argument has to be a NUMBER (not %s).' %(
-              type(amount))
-      assert isinstance(units, (str, unicode)),\
-          'The second argument has to be TEXT (not %s).' %(type(units))
-
-  def set_immutable_attribute(self, value):
-    raise AttributeError,\
-        'Objects of type ``%s`` are immutable.' %(self.__class__.__name__)
-
-  def getAmount(self):
-    return self._amount
-  amount = property(
-      getAmount,
-      set_immutable_attribute,
-      doc="Returns the amount without unit.")
-
-  def getUnits(self):
-    return self._units
-  units = property(
-      getUnits,
-      set_immutable_attribute,
-      doc="Returns the units without amount")
-
-  # Arithmetics
-  # ===========
-
-  def assertSameUnitAs(self, other):
-    assert self.units == other.units, 'Units do not match.'
-
-  def assertNoDivZero(self, other):
-    assert self.amount != 0, 'Division by zero.'
-
-  def __add__(self, other): # +
-    self.assertSameUnitAs(other)
-    return self.__class__(self.amount + other.amount, self.units)
-
-  def __sub__(self, other): # -
-    self.assertSameUnitAs(other)
-    return self.__class__(self.amount - other.amount, self.units)
-
-  def __mul__(self, other): # *
-    return self.__class__(
-        self.amount * other.amount, self.units + " * " + other.units)
-
-  def __div__(self, other): # /
-    return self.__class__(
-        self.amount / other.amount, self.units + " / " + other.units)
-
-  def __floordiv__(self, other): # //
-    self.assertNoDivZero(other)
-    return self.__class__(
-        self.amount // other.amount, self.units + " / " + other.units)
-
-  def __mod__(self, other): # %
-    self.assertNoDivZero(other)
-    return self.__class__(
-        self.amount % other.amount, self.units + " / " + other.units)
-
-  def __cmp__(self, other):
-    self.assertSameUnitAs(other)
-    if self.amount < other.amount:
-      return -1
-    if self.amount == other.amount:
-      return 0
-    if self.amount > other.amount:
-      return 1
-
-  # Special Methods
-  # ===============
-
-  def __hash__(self):
-    return hash(self.__repr__())
-
-  def __str__(self):
-    return '%s * [%s]' %(self._amount, self._units)
-
   def __repr__(self):
-    return '%s(%r, %r)' %(self.__class__.__name__, self._amount, self._units)
+    return "QuantitiesAdapter(%s, %r)" %(self.getAmount(), self.getUnits())
+  
+  # ----------------------------------------------------------------------
+  # The following lines won't be necessary after a fork in the
+  # python-quantities packages
+  #
+  @staticmethod
+  def adjust_return_types(cls, parent_cls):
+
+    def AdjustReturnType(func):
+      def wrappedFunc(self, *args, **kwargs):
+        value = func(self, *args, **kwargs)
+        return QuantitiesAdapter(value.magnitude, value.dimensionality.string)
+      return wrappedFunc
+
+    def generateAdjustedFunction(parent_cls, functionName):
+      @AdjustReturnType
+      def foo(self, *args, **kwargs):
+        function = getattr(parent_cls, functionName)
+        return function(self, *args, **kwargs)
+      return foo
+
+    # adjusting return types of analysis functions
+    functionNames = [
+        'min',
+        '__getitem__',
+        '_get_units',
+        '_set_units',
+        'rescale',
+        'ptp',
+        'clip',
+        'round',
+        'trace',
+        'mean',
+        'var',
+        'std',
+        'prod',
+        'cumprod',
+        ]
+    for functionName in functionNames:
+      foo = generateAdjustedFunction(parent_cls, functionName)
+      setattr(cls, functionName, foo)
+  # ----------------------------------------------------------------------
 
 
+if __name__ == '__main__':
+  a = QuantitiesAdapter([2,3], "mV")
+  b = QuantitiesAdapter(1, "s")
+  c = QuantitiesAdapter(2, "s")

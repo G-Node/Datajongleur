@@ -2,34 +2,35 @@ from quantity import QuantitiesAdapter as Quantity
 import numpy as np
 import interfaces as i
 
-class Moment(i.Value):
-  def __init__(self, time, units):
-    self._time = Quantity(time, units)
+class Moment(Quantity):
+  def __new__(cls, time, units):
+    obj = Quantity(time, units).view(Moment)
+    return obj
 
   def getTime(self):
-    return _time
+    return self 
 
+  def __repr__(self):
+    return "Moment(%s, %r)" %(self.getAmount(), self.getUnits())
+
+  # ------- Mapping Properties -----------
   time = property(
       getTime,
-      i.Value.setImmutableAttribute)
+      i.Value.throwSetImmutableAttributeError)
 
 
 class Period(i.Interval):
   def __init__(self, start, stop, units):
-    self._start = Quantity(start, units)
-    self._stop = Quantity(stop, units)
+    self._start_stop = Quantity([start, stop], units)
 
   def getStart(self):
-    return self._start
-  start = property(getStart)
+    return self._start_stop[0]
 
   def getStop(self):
-    return self._stop
-  stop = property(getStop)
+    return self._start_stop[1]
 
   def getLength(self):
-    return self._stop - self._start
-  length = property(getLength)
+    return np.diff(self._start_stop)[0]
 
   def __hash__(self):
     return hash(self.__repr__())
@@ -42,11 +43,16 @@ length: %s
 """ %(self.start, self.stop, self.length)
 
   def __repr__(self):
-    return '%s(%r, %r, %r)' %(
+    return '%s(%s, %s, %r)' %(
         self.__class__.__name__,
         self.getStart().getAmount(),
         self.getStop().getAmount(),
         self.getStart().getUnits())
+
+  # ------- Mapping Properties -----------
+  start = property(getStart)
+  stop = property(getStop)
+  length = property(getLength)
 
 
 class SampledTimeSeries(Quantity, i.SampledSignal, i.Interval):
@@ -59,7 +65,6 @@ class SampledTimeSeries(Quantity, i.SampledSignal, i.Interval):
     assert len(signal) == len(signal_base),\
         "len(signal) != len(signal_base)."
     obj = Quantity(signal, signal_units).view(SampledTimeSeries)
-    #obj._signal = Quantity(signal, signal_units)
     obj._signal = obj.view(Quantity)
     obj._signal_base = Quantity(signal_base, signal_base_units)
     return obj
@@ -113,22 +118,22 @@ n sample points: %s""" %(
   # ------- Mapping Properties ----------
   signal = property(
       getSignal,
-      i.Value.setImmutableAttribute)
+      i.Value.throwSetImmutableAttributeError)
   signal_base = property(
       getSignalBase,
-      i.Value.setImmutableAttribute)
+      i.Value.throwSetImmutableAttributeError)
   n_sampling_points = property(
       getNSamplingPoints,
-      i.Value.setImmutableAttribute)
+      i.Value.throwSetImmutableAttributeError)
   start = property(
       getStart,
-      i.Value.setImmutableAttribute)
+      i.Value.throwSetImmutableAttributeError)
   stop = property(
       getStop,
-      i.Value.setImmutableAttribute)
+      i.Value.throwSetImmutableAttributeError)
   length = property(
       getLength,
-      i.Value.setImmutableAttribute)
+      i.Value.throwSetImmutableAttributeError)
 
   
 class SpikeTimes(SampledTimeSeries):
@@ -197,7 +202,7 @@ n sample points: %s""" %(
    )
 
   def __repr__(self):
-    return '%s(%r, %r, %r, %r, %r)' %(
+    return '%s(%s, %r, %s, %s, %r)' %(
         self.__class__.__name__,
         self.signal.amount,
         self.signal.units,
@@ -208,24 +213,25 @@ n sample points: %s""" %(
   def __hash__(self):
     return hash(self.__repr__())
 
+  # ------- Mapping Properties ----------
   stop = property(
       getStop,
-      i.Value.setImmutableAttribute)
+      i.Value.throwSetImmutableAttributeError)
   start = property(
       getStart,
-      i.Value.setImmutableAttribute)
+      i.Value.throwSetImmutableAttributeError)
   n_sample_points = property(
       getNSamplePoints,
-      i.Value.setImmutableAttribute)
+      i.Value.throwSetImmutableAttributeError)
   signal_base = property(
       getSignalBase,
-      i.Value.setImmutableAttribute)
+      i.Value.throwSetImmutableAttributeError)
   sampling_rate = property(
       getSamplingRate,
-      i.Value.setImmutableAttribute)
+      i.Value.throwSetImmutableAttributeError)
   step_size = property(
       getStepSize,
-      i.Value.setImmutableAttribute)
+      i.Value.throwSetImmutableAttributeError)
 
 
 class BinnedSpikes(RegularlySampledTimeSeries):
@@ -252,9 +258,14 @@ class BinnedSpikes(RegularlySampledTimeSeries):
         self.stop.units)
 
 if __name__ == '__main__':
-  p = Period(1,2,"mV")
+  # Test Moment
+  a = Moment(1, "ms")
+  b = Moment(2, "ms")
+  c = Moment(2, "ms")
+  print (a==b)
+  print (b==c)
+  p = Period(1,2,"s")
   q = Quantity([1,2,3], 'mV')
   spiketimes = SpikeTimes([1.3, 1.9, 2.5], "ms")
   rsts = RegularlySampledTimeSeries([1,2,3],"mV", 1, 5, "s")
   sts = SampledTimeSeries([1,2,3], 'mV', [1,4,7], 's')
-

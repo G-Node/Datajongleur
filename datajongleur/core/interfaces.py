@@ -1,11 +1,13 @@
 class Value(object):
-  def setImmutableAttribute(self, value):
+  def throwSetImmutableAttributeError(self, value):
     raise AttributeError, "Value object is not writable"
   def __hash__(self):
     raise NotImplementedError
   def __str__(self):
     raise NotImplementedError
   def __repr__(self):
+    raise NotImplementedError
+  def __cmp__(self, other):
     raise NotImplementedError
 
 
