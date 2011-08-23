@@ -1,6 +1,6 @@
-from quantity import QuantitiesAdapter as Quantity
+from datajongleur.core.quantity import QuantitiesAdapter as Quantity
 import numpy as np
-import interfaces as i
+import datajongleur.core.interfaces as i
 
 class Moment(Quantity):
   def __new__(cls, time, units):
