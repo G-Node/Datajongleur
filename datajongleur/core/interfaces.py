@@ -97,6 +97,7 @@ class SampledSignal(Quantity):
   def getNSamplingPoints(self):
     raise NotImplementedError
 
+
 class RegularlySampledSignal(SampledSignal):
   def getSamplingRate(self):
     raise NotImplementedError

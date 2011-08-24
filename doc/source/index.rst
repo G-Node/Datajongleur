@@ -13,6 +13,7 @@ Contents:
 
    tutorials/quickstart_tutorial.rst
    core/index_core.rst
+   neuro/index_neuro.rst
 
 Indices and tables
 ==================
