@@ -1,4 +1,5 @@
 from datajongleur.core.quantity import QuantitiesAdapter as Quantity
+from hashlib import sha1
 import numpy as np
 import datajongleur.core.interfaces as i
 
@@ -12,6 +13,14 @@ class Moment(Quantity):
 
   def __repr__(self):
     return "Moment(%s, %r)" %(self.getAmount(), self.getUnits())
+
+  def __hash__(self):
+    # different from `getHashValue` as python-hashs should be integer for usage
+    # for collections
+    return hash(self.__repr__())
+
+  def getHashValue(self):
+    return sha1(self.__repr__()).hexdigest()
 
   # ------- Mapping Properties -----------
   time = property(
@@ -33,7 +42,11 @@ class Period(i.Interval):
     return np.diff(self._start_stop)[0]
 
   def __hash__(self):
+    # different from `getHashValue` as python-hashs should be integer for usage
     return hash(self.__repr__())
+
+  def getHashValue(self):
+    return sha1(self.__repr__()).hexdigest()
 
   def __str__(self):
     return """\
@@ -112,6 +125,10 @@ n sample points: %s""" %(
         self.amount,
         self.units,
         )
+
+  def getHashValue(self):
+    return sha1(self.__repr__()).hexdigest()
+
   def __hash__(self):
     return hash(self.__repr__())
 
@@ -209,6 +226,9 @@ n sample points: %s""" %(
         self.start.amount,
         self.stop.amount,
         self.stop.units)
+
+  def getHashValue(self):
+    return sha1(self.__repr__()).hexdigest()
 
   def __hash__(self):
     return hash(self.__repr__())
