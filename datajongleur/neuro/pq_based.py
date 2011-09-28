@@ -1,11 +1,49 @@
 from datajongleur.core.quantity import QuantitiesAdapter as Quantity
 from hashlib import sha1
+import json
 import numpy as np
 import datajongleur.core.interfaces as i
 
+def checksum_json(self):
+  return sha1(self.getJSON()).hexdigest()
+
+
+#############
+## Moment ###
+#############
+
+class MomentDTO(object):
+  def __init__(self, time, units):
+    self.time = time
+    self.units = units
+
+  def getJSON(self):
+    return json.dumps({
+      'time': self.time,
+      'units': self.units})
+
+  def checksum_json(self):
+    return checksum_json(self)
+
+  def getXML(self):
+    from datajongleur.tools.xml_jongleur import dict2xml
+    d = {'time': self.time, 'units': self.units}
+    xml = dict2xml(d)
+    xml.display()
+    
+
 class Moment(Quantity):
   def __new__(cls, time, units):
-    obj = Quantity(time, units).view(Moment)
+    dto = MomentDTO(time, units)
+    #obj = Quantity(time, units).view(Moment)
+    return cls.newByDTO(dto)
+  
+  @classmethod
+  def newByDTO(cls, dto):
+    obj = Quantity(
+        dto.time,
+        dto.units).view(Moment)
+    obj._dto = dto
     return obj
 
   def getTime(self):
@@ -27,10 +65,38 @@ class Moment(Quantity):
       getTime,
       i.Value.throwSetImmutableAttributeError)
 
+############
+## Period ##
+############
+
+class PeriodDTO(object):
+  def __init__(self, start, stop, units):
+    self.start = start
+    self.stop = stop
+    self.units = units
+
+  def getJSON(self):
+    return json.dumps({
+      'start': self.start,
+      'stop': self.stop,
+      'units': self.units})
+
+  def checksum_json(self):
+    return checksum_json(self)
+
 
 class Period(i.Interval):
   def __init__(self, start, stop, units):
-    self._start_stop = Quantity([start, stop], units)
+    dto = PeriodDTO(start, stop, units)
+    self.initByDTO(dto)
+    
+
+  def initByDTO(self, dto):
+    self._start_stop = Quantity(
+          [dto.start, dto.stop],
+          dto.units)
+    self._dto = dto
+
 
   def getStart(self):
     return self._start_stop[0]
@@ -68,6 +134,32 @@ length: %s
   length = property(getLength)
 
 
+#######################
+## SampledTimeSeries ##
+#######################
+
+class SampledTimeSeriesDTO(object):
+  def __init__(self,
+      signal,
+      signal_units,
+      signal_base,
+      signal_base_units):
+    self.signal = signal
+    self.signal_units = signal_units
+    self.signal_base = signal_base
+    self.signal_base_units = signal_base_units
+
+  def getJSON(self):
+    return json.dumps({
+      'signal': self.start,
+      'signal_units': self.stop,
+      'signal_base': self.signal_base,
+      'signal_base_units': self.signal_base_units})
+
+  def checksum_json(self):
+    return checksum_json(self)
+
+
 class SampledTimeSeries(Quantity, i.SampledSignal, i.Interval):
   def __new__(cls,
       signal,
@@ -77,9 +169,23 @@ class SampledTimeSeries(Quantity, i.SampledSignal, i.Interval):
     #: Call the parent class constructor
     assert len(signal) == len(signal_base),\
         "len(signal) != len(signal_base)."
-    obj = Quantity(signal, signal_units).view(SampledTimeSeries)
+    dto = SampledTimeSeriesDTO(
+        signal,
+        signal_units,
+        signal_base,
+        signal_base_units)
+    obj = cls.newByDTO(dto)
+    return obj
+
+  @classmethod
+  def newByDTO(cls, dto):
+    obj = Quantity(
+        dto.signal,
+        dto.signal_units).view(SampledTimeSeries)
     obj._signal = obj.view(Quantity)
-    obj._signal_base = Quantity(signal_base, signal_base_units)
+    obj._signal_base = Quantity(
+        dto.signal_base,
+        dto.signal_base_units)
     return obj
 
   # ----- Implementing Interval ------
@@ -152,6 +258,21 @@ n sample points: %s""" %(
       getLength,
       i.Value.throwSetImmutableAttributeError)
 
+
+################
+## SpikeTimes ##
+################
+  
+class SpikeTimesDTO(object):
+  def __init__(self,
+      spiketimes,
+      spiketimes_units):
+    self.spiketimes = spiketimes
+    self.spiketimes_units = spiketimes_units
+
+  def checksum_json(self):
+    return checksum_json(self)
+
   
 class SpikeTimes(SampledTimeSeries):
   """
@@ -162,20 +283,69 @@ class SpikeTimes(SampledTimeSeries):
       spiketimes,
       spiketimes_units):
     #: Call the parent class constructor
-    obj = Quantity(spiketimes, spiketimes_units).view(SpikeTimes)
-    obj._signal = Quantity(np.ones(len(spiketimes)), dtype=bool)
-    obj._signal_base = Quantity(spiketimes, spiketimes_units)
+    dto = SpikeTimesDTO(
+        spiketimes,
+        spiketimes_units)
+    obj = cls.newByDTO(dto)
+    obj._dto = dto
     return obj
+
+  @classmethod
+  def newByDTO(cls, dto):
+    obj = Quantity(
+        dto.spiketimes,
+        dto.spiketimes_units).view(cls)
+    obj._signal = Quantity(np.ones(len(
+      dto.spiketimes)), dtype=bool)
+    obj._signal_base = Quantity(
+        dto.spiketimes, 
+        dto.spiketimes_units)
+    return obj
+
+
+#################################
+## RegularlySampledTimesSeries ##
+#################################
+  
+class RegularlySampledTimeSeriesDTO(object):
+  def __init__(self, sampled_signal, sampled_signal_units, start, stop, time_units):
+    self.sampled_signal = sampled_signal
+    self.sampled_signal_units = sampled_signal_units
+    self.start = start
+    self.stop = stop
+    self.time_units = time_units
+
+  def checksum_json(self):
+    return checksum_json(self)
 
   
 class RegularlySampledTimeSeries(SampledTimeSeries, i.RegularlySampledSignal):
-  def __new__(cls, sample_signal, sample_units, start, stop, time_units):
+  def __new__(cls, sampled_signal, sampled_signal_units, start, stop, time_units):
     #: Call the parent class constructor
-    obj = Quantity(sample_signal, sample_units).view(cls)
-    obj._signal = obj.view(Quantity)
-    obj._start = Quantity(start, time_units)
-    obj._stop = Quantity(stop, time_units)
+    dto = RegularlySampledTimeSeriesDTO(
+        sampled_signal,
+        sampled_signal_units,
+        start,
+        stop,
+        time_units)
+    obj = cls.newByDTO(dto)
+    obj._dto = dto
     return obj
+
+  @classmethod
+  def newByDTO(cls, dto):
+    obj = Quantity(
+        dto.sampled_signal,
+        dto.sampled_signal_units).view(cls)
+    obj._signal = obj.view(Quantity)
+    obj._start = Quantity(
+        dto.start,
+        dto.time_units)
+    obj._stop = Quantity(
+        dto.stop,
+        dto.time_units)
+    return obj
+
 
   # ----- Implementation Period (diff. SampledTimeSeries)------
   def getStart(self):
@@ -254,23 +424,58 @@ n sample points: %s""" %(
       i.Value.throwSetImmutableAttributeError)
 
 
+##################
+## BinnedSpikes ##
+##################
+
+class BinnedSpikesDTO(object):
+  """
+  ``BinnedSpikes`` are a special case of ``RegularlySamgledSignal`` with
+  integer values for ``signals`` and bin-times as ``signal_base``.
+  """
+  def __init__(self, sampled_signal, start, stop, time_units):
+    self.sampled_signal = sampled_signal
+    self.start = start
+    self.stop = stop
+    self.time_units = time_units
+
+  def checksum_json(self):
+    return checksum_json(self)
+
+
 class BinnedSpikes(RegularlySampledTimeSeries):
   """
   ``BinnedSpikes`` are a special case of ``RegularlySamgledSignal`` with
   integer values for ``signals`` and bin-times as ``signal_base``.
   """
-  def __new__(cls, sample_signal, start, stop, time_units):
+  def __new__(cls, sampled_signal, start, stop, time_units):
     #: Call the parent class constructor
-    assert np.array(sample_signal).dtype == 'int',\
+    assert np.array(sampled_signal).dtype == 'int',\
         "sample signal has to be of type 'int'"
-    obj = Quantity(sample_signal).view(cls)
+    dto = BinnedSpikesDTO(
+        sampled_signal,
+        start,
+        stop,
+        time_units)
+    obj = cls.newByDTO(dto)
+    obj._dto = dto    
+    return obj
+  
+  @classmethod
+  def newByDTO(cls, dto):
+    obj = Quantity(
+        dto.sampled_signal).view(cls)
     obj._signal = obj.view(Quantity)
-    obj._start = Quantity(start, time_units)
-    obj._stop = Quantity(stop, time_units)
+    obj._start = Quantity(
+        dto.start,
+        dto.time_units)
+    obj._stop = Quantity(
+        dto.stop,
+        dto.time_units)
     return obj
 
   def __repr__(self):
-    return '%s(%r, %r, %r, %r, %r)' %(
+    return '%s(%r, %r, %r, %r)' %(
         self.__class__.__name__,
         self.signal.amount,
         self.start.amount,
@@ -278,6 +483,8 @@ class BinnedSpikes(RegularlySampledTimeSeries):
         self.stop.units)
 
 if __name__ == '__main__':
+  # Test MomentDTO
+  a_dto = MomentDTO(1, 'ms')
   # Test Moment
   a = Moment(1, "ms")
   b = Moment(2, "ms")
