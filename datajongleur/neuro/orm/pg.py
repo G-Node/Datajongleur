@@ -1,4 +1,5 @@
 import sqlalchemy as sa
+import datetime as dt
 from sqlalchemy import orm
 from sqlalchemy.dialects.postgresql import ARRAY as PGArray
 from datajongleur.neuro.pq_based import *
@@ -35,9 +36,9 @@ def map_pq_based(metadata, schemaname=SCHEMANAME):
 
   spike_times_table = sa.Table(
       PREFIX + 'spike_times', metadata,
-      sa.Column('spiketimes_key', sa.Integer, primary_key=True),
-      sa.Column('spiketimes', PGArray(sa.Float)),
-      sa.Column('spiketimes_units', sa.String),
+      sa.Column('spike_times_key', sa.Integer, primary_key=True),
+      sa.Column('spike_times', PGArray(sa.Float)),
+      sa.Column('spike_times_units', sa.String),
       schema = schemaname)
 
   regularly_sampled_time_series_table = sa.Table(
@@ -70,6 +71,9 @@ def map_pq_based(metadata, schemaname=SCHEMANAME):
       regularly_sampled_time_series_table)
   orm.mapper(BinnedSpikesDTO, binned_spikes_table)
 
+  # Create non existing tables
+  metadata.create_all()
+
 def connect_db(db_name=DEFAULT_CONNECTION, echo=True):
   """
   Examples for `db_name`:
@@ -83,34 +87,181 @@ def connect_db(db_name=DEFAULT_CONNECTION, echo=True):
   session = Session()
   metadata = sa.MetaData(bind=connection)
   map_pq_based(metadata)
+  map_container(metadata)
   return metadata, session, connection
+
+####################
+# Container-jongleur
+####################
+
+class CJ(object):
+  def __init__(self, db_name=DEFAULT_CONNECTION, echo=True):
+    m,s,c = connect_db(db_name, echo)
+    self.metadata = m
+    self.session = s
+    self.connection = c
+
+  def getContainers(self):
+    return self.session.query(Container).all()
+
+  def addContainer(self, container):
+    assert isinstance(container, Container)
+    self.session.add(container)
+    self.session.commit()
+
+
+class Container(object):
+  def __init__(self, name):
+    self.name = name
+
+  def addMoment(self):
+    pass
+
+  def __repr__(self):
+    return "Container(%r)" %(self.name)
+
+def map_container(metadata, schemaname=SCHEMANAME):
+  container_table = sa.Table(
+      PREFIX + "container", metadata,
+      sa.Column('name', sa.TEXT, primary_key=True),
+      sa.Column('creation_time', sa.DateTime, default=dt.datetime.now()),
+      # PR: now() is not implemented on the level of SQL
+      schema = schemaname)
+
+  container_moment_map_table = sa.Table(
+      PREFIX + "container_moment_map", metadata,
+      sa.Column('moment_key',
+        sa.Integer,
+        sa.ForeignKey(schemaname + "." + PREFIX + 'moments.moment_key')),
+      sa.Column('name', 
+        sa.TEXT,
+        sa.ForeignKey(schemaname + "." + PREFIX + 'container.name')),
+      sa.PrimaryKeyConstraint('moment_key', 'name'),
+      schema = schemaname
+      )
+
+  container_period_map_table = sa.Table(
+      PREFIX + 'container_period_map', metadata,
+      sa.Column('period_key',
+        sa.Integer,
+        sa.ForeignKey(schemaname + '.' + PREFIX + 'periods.period_key')),
+      sa.Column('name', 
+        sa.TEXT,
+        sa.ForeignKey(schemaname + "." + PREFIX + 'container.name')),
+      sa.PrimaryKeyConstraint('period_key', 'name'),
+      schema = schemaname
+      )
+
+  container_sampled_time_series_map_table = sa.Table(
+      PREFIX + "container_sampled_time_series_map", metadata,
+      sa.Column('sampled_time_series_key',
+        sa.Integer,
+        sa.ForeignKey(
+          schemaname + "." + PREFIX + 'sampled_time_series.sampled_time_series_key')),
+      sa.Column('name', 
+        sa.TEXT,
+        sa.ForeignKey(schemaname + "." + PREFIX + 'container.name')),
+      sa.PrimaryKeyConstraint('sampled_time_series_key', 'name'),
+      schema = schemaname
+      )
+
+  container_spike_times_map_table = sa.Table(
+      PREFIX + 'container_spike_times_map', metadata,
+      sa.Column('spike_times_key',
+        sa.Integer,
+        sa.ForeignKey(schemaname + '.' + PREFIX +\
+            'spike_times.spike_times_key')),
+      sa.Column('name', 
+        sa.TEXT,
+        sa.ForeignKey(schemaname + "." + PREFIX + 'container.name')),
+      sa.PrimaryKeyConstraint('spike_times_key', 'name'),
+      schema = schemaname
+      )
+
+  container_regularly_sampled_time_series_map_table = sa.Table(
+      PREFIX + 'container_regularly_sampled_time_series_map', metadata,
+      sa.Column('regularly_sampled_time_series_key',
+        sa.Integer,
+        sa.ForeignKey(schemaname + '.' + PREFIX +\
+          'regularly_sampled_time_series.regularly_sampled_time_series_key')),
+      sa.Column('name', 
+        sa.TEXT,
+        sa.ForeignKey(schemaname + "." + PREFIX + 'container.name')),
+      sa.PrimaryKeyConstraint('regularly_sampled_time_series_key', 'name'),
+      schema = schemaname
+      )
+
+  container_binned_spikes_map_table = sa.Table(
+      PREFIX + 'container_binned_spikes_map', metadata,
+      sa.Column('binned_spikes_key',
+        sa.Integer,
+        sa.ForeignKey(schemaname + '.' + PREFIX +\
+            'binned_spikes.binned_spikes_key')),
+      sa.Column('name', 
+        sa.TEXT,
+        sa.ForeignKey(schemaname + "." + PREFIX + 'container.name')),
+      sa.PrimaryKeyConstraint('binned_spikes_key', 'name'),
+      schema = schemaname
+      )
+
+  orm.mapper(Container, container_table, properties=dict(
+    _moments=orm.relation(
+        MomentDTO,
+        secondary=container_moment_map_table,
+        backref='_containers'),
+    _periods=orm.relation(
+        PeriodDTO,
+        secondary=container_period_map_table,
+        backref='_containers'),
+    _sampled_time_series=orm.relation(
+        SampledTimeSeriesDTO,
+        secondary=container_sampled_time_series_map_table,
+        backref='_containers'),
+    _spike_times=orm.relation(
+        SpikeTimesDTO,
+        secondary=container_spike_times_map_table,
+        backref='_containers'),
+    _regularly_sampled_time_series=orm.relation(
+        RegularlySampledTimeSeriesDTO,
+        secondary=container_regularly_sampled_time_series_map_table,
+        backref='_containers'),
+    _binned_spikes=orm.relation(
+        BinnedSpikesDTO,
+        secondary=container_binned_spikes_map_table,
+        backref='_containers'),
+    ))
+  metadata.create_all()
+
+################################
+
+
 
 if __name__ == '__main__':
   import random
-  m,s,c = connect_db()
-  m.create_all()
-  # MomentDTO
-  m = MomentDTO(random.random(), 'ms')
-  s.add(m)
-  s.commit()
-  # PeriodDTO
-  p = PeriodDTO(random.random(), 1.1, 'ns')
-  s.add(p)
-  s.commit()
-  # SampledTimeSeriesDTO
-  sts = SampledTimeSeriesDTO([1,2,3], 'mV', [1,4,7], 's')
-  s.add(sts)
-  s.commit()
-  # SpikeTimesDTO
-  spiketimes = SpikeTimesDTO([1.3, 1.9, 2.5], "ms")
-  s.add(spiketimes)
-  s.commit()
-  # RegularlySampledTimeSeriesDTO
-  rsts = RegularlySampledTimeSeriesDTO([1,2,3],"mV", 1, 5, "s")
-  s.add(rsts)
-  s.commit()
-  # BinnedSpikesDTO
-  bs = BinnedSpikesDTO([5,6,2], 1.3, 5.9, "ms")
-  s.add(bs)
-  s.commit()
-  
+  cj = CJ()
+  if False:
+    # MomentDTO
+    m = MomentDTO(random.random(), 'ms')
+    cj.session.add(m)
+    cj.session.commit()
+    # PeriodDTO
+    p = PeriodDTO(random.random(), 1.1, 'ns')
+    cj.session.add(p)
+    cj.session.commit()
+    # SampledTimeSeriesDTO
+    sts = SampledTimeSeriesDTO([1,2,3], 'mV', [1,4,7], 's')
+    cj.session.add(sts)
+    cj.session.commit()
+    # SpikeTimesDTO
+    spiketimes = SpikeTimesDTO([1.3, 1.9, 2.5], "ms")
+    cj.session.add(spiketimes)
+    cj.session.commit()
+    # RegularlySampledTimeSeriesDTO
+    rsts = RegularlySampledTimeSeriesDTO([1,2,3],"mV", 1, 5, "s")
+    cj.session.add(rsts)
+    cj.session.commit()
+    # BinnedSpikesDTO
+    bs = BinnedSpikesDTO([5,6,2], 1.3, 5.9, "ms")
+    cj.session.add(bs)
+    cj.session.commit()
+    

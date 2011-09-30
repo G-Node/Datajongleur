@@ -88,15 +88,14 @@ class PeriodDTO(object):
 class Period(i.Interval):
   def __init__(self, start, stop, units):
     dto = PeriodDTO(start, stop, units)
-    self.initByDTO(dto)
+    self.__class__.initByDTO(dto)
     
-
+  @classmethod
   def initByDTO(self, dto):
     self._start_stop = Quantity(
           [dto.start, dto.stop],
           dto.units)
     self._dto = dto
-
 
   def getStart(self):
     return self._start_stop[0]
