@@ -2,24 +2,25 @@ import sqlalchemy as sa
 import datetime as dt
 from sqlalchemy import orm
 from sqlalchemy.dialects.postgresql import ARRAY as PGArray
+from sqlalchemy import exc
 from datajongleur.neuro.pq_based import *
 
 PREFIX = 'dj_neuro_'
 SCHEMANAME = 'sandkasten'
 DEFAULT_CONNECTION = "postgresql://localhost/rautiation"
 
-def map_pq_based(metadata, schemaname=SCHEMANAME):
+def map_pq_beanbags(metadata, schemaname=SCHEMANAME):
   # Table specification
   moment_table = sa.Table(
       PREFIX + 'moments', metadata,
-      sa.Column('moment_key', sa.Integer, primary_key=True),
+      sa.Column('moment_key', sa.BigInteger, primary_key=True),
       sa.Column('time', sa.Float),
       sa.Column('units', sa.String),
       schema=schemaname)
 
   period_table = sa.Table(
       PREFIX + 'periods', metadata,
-      sa.Column('period_key', sa.Integer, primary_key=True),
+      sa.Column('period_key', sa.BigInteger, primary_key=True),
       sa.Column('start', sa.Float),
       sa.Column('stop', sa.Float),
       sa.Column('units', sa.String),
@@ -27,7 +28,7 @@ def map_pq_based(metadata, schemaname=SCHEMANAME):
 
   sampled_time_series_table = sa.Table(
       PREFIX + 'sampled_time_series', metadata,
-      sa.Column('sampled_time_series_key', sa.Integer, primary_key=True),
+      sa.Column('sampled_time_series_key', sa.BigInteger, primary_key=True),
       sa.Column('signal', PGArray(sa.Float)),
       sa.Column('signal_units', sa.String),
       sa.Column('signal_base', PGArray(sa.Float)),
@@ -36,7 +37,7 @@ def map_pq_based(metadata, schemaname=SCHEMANAME):
 
   spike_times_table = sa.Table(
       PREFIX + 'spike_times', metadata,
-      sa.Column('spike_times_key', sa.Integer, primary_key=True),
+      sa.Column('spike_times_key', sa.BigInteger, primary_key=True),
       sa.Column('spike_times', PGArray(sa.Float)),
       sa.Column('spike_times_units', sa.String),
       schema = schemaname)
@@ -44,7 +45,7 @@ def map_pq_based(metadata, schemaname=SCHEMANAME):
   regularly_sampled_time_series_table = sa.Table(
       PREFIX + 'regularly_sampled_time_series', metadata,
       sa.Column('regularly_sampled_time_series_key',
-        sa.Integer, primary_key=True),
+        sa.BigInteger, primary_key=True),
       sa.Column('sampled_signal', PGArray(sa.Float)),
       sa.Column('sampled_signal_units', sa.String),
       sa.Column('start', sa.Float),
@@ -54,7 +55,7 @@ def map_pq_based(metadata, schemaname=SCHEMANAME):
 
   binned_spikes_table = sa.Table(
       PREFIX + 'binned_spikes', metadata,
-      sa.Column('binned_spikes_key', sa.Integer, primary_key=True),
+      sa.Column('binned_spikes_key', sa.BigInteger, primary_key=True),
       sa.Column('sampled_signal', PGArray(sa.Integer)),
       sa.Column('start', sa.Float),
       sa.Column('stop', sa.Float),
@@ -86,8 +87,6 @@ def connect_db(db_name=DEFAULT_CONNECTION, echo=True):
   Session.configure(bind=connection)
   session = Session()
   metadata = sa.MetaData(bind=connection)
-  map_pq_based(metadata)
-  map_container(metadata)
   return metadata, session, connection
 
 ####################
@@ -97,12 +96,29 @@ def connect_db(db_name=DEFAULT_CONNECTION, echo=True):
 class CJ(object):
   def __init__(self, db_name=DEFAULT_CONNECTION, echo=True):
     m,s,c = connect_db(db_name, echo)
+    try:
+      map_pq_beanbags(m)
+    except exc.SQLAlchemyError, e:
+      print "Mapping problem: %s" %(e[0])
+    try:
+      map_container(m)
+    except exc.SQLAlchemyError, e:
+      print "Mapping problem (container): %s" %(e[0])
     self.metadata = m
     self.session = s
     self.connection = c
 
-  def getContainers(self):
-    return self.session.query(Container).all()
+  def getContainerDict(self):
+    list_of_containers = self.getContainerList()
+    dict_of_containers = {}
+    for container in list_of_containers:
+      print container.name
+      dict_of_containers[container.name] = container
+    return dict_of_containers
+
+  def getContainerList(self):
+    list_of_containers = self.session.query(Container).all()
+    return list_of_containers
 
   def addContainer(self, container):
     assert isinstance(container, Container)
@@ -131,7 +147,7 @@ def map_container(metadata, schemaname=SCHEMANAME):
   container_moment_map_table = sa.Table(
       PREFIX + "container_moment_map", metadata,
       sa.Column('moment_key',
-        sa.Integer,
+        sa.BigInteger,
         sa.ForeignKey(schemaname + "." + PREFIX + 'moments.moment_key')),
       sa.Column('name', 
         sa.TEXT,
@@ -143,7 +159,7 @@ def map_container(metadata, schemaname=SCHEMANAME):
   container_period_map_table = sa.Table(
       PREFIX + 'container_period_map', metadata,
       sa.Column('period_key',
-        sa.Integer,
+        sa.BigInteger,
         sa.ForeignKey(schemaname + '.' + PREFIX + 'periods.period_key')),
       sa.Column('name', 
         sa.TEXT,
@@ -155,7 +171,7 @@ def map_container(metadata, schemaname=SCHEMANAME):
   container_sampled_time_series_map_table = sa.Table(
       PREFIX + "container_sampled_time_series_map", metadata,
       sa.Column('sampled_time_series_key',
-        sa.Integer,
+        sa.BigInteger,
         sa.ForeignKey(
           schemaname + "." + PREFIX + 'sampled_time_series.sampled_time_series_key')),
       sa.Column('name', 
@@ -168,7 +184,7 @@ def map_container(metadata, schemaname=SCHEMANAME):
   container_spike_times_map_table = sa.Table(
       PREFIX + 'container_spike_times_map', metadata,
       sa.Column('spike_times_key',
-        sa.Integer,
+        sa.BigInteger,
         sa.ForeignKey(schemaname + '.' + PREFIX +\
             'spike_times.spike_times_key')),
       sa.Column('name', 
@@ -181,7 +197,7 @@ def map_container(metadata, schemaname=SCHEMANAME):
   container_regularly_sampled_time_series_map_table = sa.Table(
       PREFIX + 'container_regularly_sampled_time_series_map', metadata,
       sa.Column('regularly_sampled_time_series_key',
-        sa.Integer,
+        sa.BigInteger,
         sa.ForeignKey(schemaname + '.' + PREFIX +\
           'regularly_sampled_time_series.regularly_sampled_time_series_key')),
       sa.Column('name', 
@@ -194,7 +210,7 @@ def map_container(metadata, schemaname=SCHEMANAME):
   container_binned_spikes_map_table = sa.Table(
       PREFIX + 'container_binned_spikes_map', metadata,
       sa.Column('binned_spikes_key',
-        sa.Integer,
+        sa.BigInteger,
         sa.ForeignKey(schemaname + '.' + PREFIX +\
             'binned_spikes.binned_spikes_key')),
       sa.Column('name', 
@@ -239,6 +255,8 @@ def map_container(metadata, schemaname=SCHEMANAME):
 if __name__ == '__main__':
   import random
   cj = CJ()
+  d = cj.getContainerDict()
+  l = cj.getContainerList()
   if False:
     # MomentDTO
     m = MomentDTO(random.random(), 'ms')

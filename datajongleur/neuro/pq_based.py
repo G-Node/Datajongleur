@@ -43,7 +43,7 @@ class Moment(Quantity):
     obj = Quantity(
         dto.time,
         dto.units).view(Moment)
-    obj._dto = dto
+    obj._dto_moment = dto
     return obj
 
   def getTime(self):
@@ -95,7 +95,7 @@ class Period(i.Interval):
     self._start_stop = Quantity(
           [dto.start, dto.stop],
           dto.units)
-    self._dto = dto
+    self._dto_period = dto
 
   def getStart(self):
     return self._start_stop[0]
@@ -286,7 +286,7 @@ class SpikeTimes(SampledTimeSeries):
         spiketimes,
         spiketimes_units)
     obj = cls.newByDTO(dto)
-    obj._dto = dto
+    obj._dto_spike_times = dto
     return obj
 
   @classmethod
@@ -302,9 +302,9 @@ class SpikeTimes(SampledTimeSeries):
     return obj
 
 
-#################################
-## RegularlySampledTimesSeries ##
-#################################
+################################
+## RegularlySampledTimeSeries ##
+################################
   
 class RegularlySampledTimeSeriesDTO(object):
   def __init__(self, sampled_signal, sampled_signal_units, start, stop, time_units):
@@ -319,7 +319,12 @@ class RegularlySampledTimeSeriesDTO(object):
 
   
 class RegularlySampledTimeSeries(SampledTimeSeries, i.RegularlySampledSignal):
-  def __new__(cls, sampled_signal, sampled_signal_units, start, stop, time_units):
+  def __new__(cls,
+      sampled_signal,
+      sampled_signal_units,
+      start,
+      stop,
+      time_units):
     #: Call the parent class constructor
     dto = RegularlySampledTimeSeriesDTO(
         sampled_signal,
@@ -328,14 +333,14 @@ class RegularlySampledTimeSeries(SampledTimeSeries, i.RegularlySampledSignal):
         stop,
         time_units)
     obj = cls.newByDTO(dto)
-    obj._dto = dto
+    obj._dto_regularly_sampled_time_series = dto
     return obj
 
   @classmethod
   def newByDTO(cls, dto):
     obj = Quantity(
         dto.sampled_signal,
-        dto.sampled_signal_units).view(cls)
+        dto.sampled_signal_units).view(RegularlySampledTimeSeries)
     obj._signal = obj.view(Quantity)
     obj._start = Quantity(
         dto.start,
@@ -345,6 +350,8 @@ class RegularlySampledTimeSeries(SampledTimeSeries, i.RegularlySampledSignal):
         dto.time_units)
     return obj
 
+  def getSelf(self):
+    return self
 
   # ----- Implementation Period (diff. SampledTimeSeries)------
   def getStart(self):
@@ -368,6 +375,7 @@ class RegularlySampledTimeSeries(SampledTimeSeries, i.RegularlySampledSignal):
 
   # ----- Implementing Value  ------
   def __str__(self):
+    return str(self.__dict__)
     return """
 signal:          %s,
 signalbase:      %s,
@@ -388,8 +396,8 @@ n sample points: %s""" %(
    )
 
   def __repr__(self):
-    return '%s(%s, %r, %s, %s, %r)' %(
-        self.__class__.__name__,
+    return '(%s, %r, %s, %s, %r)' %(
+        #self.__class__.__name__,
         self.signal.amount,
         self.signal.units,
         self.start.amount,
@@ -457,7 +465,7 @@ class BinnedSpikes(RegularlySampledTimeSeries):
         stop,
         time_units)
     obj = cls.newByDTO(dto)
-    obj._dto = dto    
+    obj._dto_binned_spikes = dto    
     return obj
   
   @classmethod
@@ -495,3 +503,4 @@ if __name__ == '__main__':
   spiketimes = SpikeTimes([1.3, 1.9, 2.5], "ms")
   rsts = RegularlySampledTimeSeries([1,2,3],"mV", 1, 5, "s")
   sts = SampledTimeSeries([1,2,3], 'mV', [1,4,7], 's')
+  print (rsts * 2)
