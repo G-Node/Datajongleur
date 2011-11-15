@@ -11,9 +11,9 @@ DEFAULT_CONNECTION = "postgresql://localhost/rautiation"
 
 def map_pq_beanbags(metadata, schemaname=SCHEMANAME):
   # Table specification
-  moment_table = sa.Table(
-      PREFIX + 'moments', metadata,
-      sa.Column('moment_key', sa.BigInteger, primary_key=True),
+  time_point_table = sa.Table(
+      PREFIX + 'time_points', metadata,
+      sa.Column('time_point_key', sa.BigInteger, primary_key=True),
       sa.Column('time', sa.Float),
       sa.Column('units', sa.String),
       schema=schemaname)
@@ -63,7 +63,7 @@ def map_pq_beanbags(metadata, schemaname=SCHEMANAME):
       schema = schemaname)
 
   # Mapping
-  orm.mapper(MomentDTO, moment_table)
+  orm.mapper(TimePointDTO, time_point_table)
   orm.mapper(PeriodDTO, period_table)
   orm.mapper(SampledTimeSeriesDTO, sampled_time_series_table)
   orm.mapper(SpikeTimesDTO, spike_times_table)
@@ -130,7 +130,7 @@ class Container(object):
   def __init__(self, name):
     self.name = name
 
-  def addMoment(self):
+  def addTimePoint(self):
     pass
 
   def __repr__(self):
@@ -144,15 +144,15 @@ def map_container(metadata, schemaname=SCHEMANAME):
       # PR: now() is not implemented on the level of SQL
       schema = schemaname)
 
-  container_moment_map_table = sa.Table(
-      PREFIX + "container_moment_map", metadata,
-      sa.Column('moment_key',
+  container_time_point_map_table = sa.Table(
+      PREFIX + "container_time_point_map", metadata,
+      sa.Column('time_point_key',
         sa.BigInteger,
-        sa.ForeignKey(schemaname + "." + PREFIX + 'moments.moment_key')),
+        sa.ForeignKey(schemaname + "." + PREFIX + 'time_points.time_point_key')),
       sa.Column('name', 
         sa.TEXT,
         sa.ForeignKey(schemaname + "." + PREFIX + 'container.name')),
-      sa.PrimaryKeyConstraint('moment_key', 'name'),
+      sa.PrimaryKeyConstraint('time_point_key', 'name'),
       schema = schemaname
       )
 
@@ -221,9 +221,9 @@ def map_container(metadata, schemaname=SCHEMANAME):
       )
 
   orm.mapper(Container, container_table, properties=dict(
-    _moments=orm.relation(
-        MomentDTO,
-        secondary=container_moment_map_table,
+    _time_points=orm.relation(
+        TimePointDTO,
+        secondary=container_time_point_map_table,
         backref='_containers'),
     _periods=orm.relation(
         PeriodDTO,
@@ -258,8 +258,8 @@ if __name__ == '__main__':
   d = cj.getContainerDict()
   l = cj.getContainerList()
   if False:
-    # MomentDTO
-    m = MomentDTO(random.random(), 'ms')
+    # TimePointDTO
+    m = TimePointDTO(random.random(), 'ms')
     cj.session.add(m)
     cj.session.commit()
     # PeriodDTO

@@ -3,16 +3,17 @@ from hashlib import sha1
 import json
 import numpy as np
 import datajongleur.core.interfaces as i
+import pdb
 
 def checksum_json(self):
   return sha1(self.getJSON()).hexdigest()
 
 
-#############
-## Moment ###
-#############
+################
+## TimePoint ###
+################
 
-class MomentDTO(object):
+class TimePointDTO(object):
   def __init__(self, time, units):
     self.time = time
     self.units = units
@@ -32,18 +33,18 @@ class MomentDTO(object):
     xml.display()
     
 
-class Moment(Quantity):
+class TimePoint(Quantity):
   def __new__(cls, time, units):
-    dto = MomentDTO(time, units)
-    #obj = Quantity(time, units).view(Moment)
+    dto = TimePointDTO(time, units)
+    #obj = Quantity(time, units).view(cls)
     return cls.newByDTO(dto)
   
   @classmethod
   def newByDTO(cls, dto):
     obj = Quantity(
         dto.time,
-        dto.units).view(Moment)
-    obj._dto_moment = dto
+        dto.units).view(cls)
+    obj._dto_time_point = dto
     return obj
 
   def getTime(self):
@@ -180,7 +181,7 @@ class SampledTimeSeries(Quantity, i.SampledSignal, i.Interval):
   def newByDTO(cls, dto):
     obj = Quantity(
         dto.signal,
-        dto.signal_units).view(SampledTimeSeries)
+        dto.signal_units).view(cls)
     obj._signal = obj.view(Quantity)
     obj._signal_base = Quantity(
         dto.signal_base,
@@ -333,14 +334,13 @@ class RegularlySampledTimeSeries(SampledTimeSeries, i.RegularlySampledSignal):
         stop,
         time_units)
     obj = cls.newByDTO(dto)
-    obj._dto_regularly_sampled_time_series = dto
     return obj
 
   @classmethod
   def newByDTO(cls, dto):
     obj = Quantity(
         dto.sampled_signal,
-        dto.sampled_signal_units).view(RegularlySampledTimeSeries)
+        dto.sampled_signal_units).view(cls)
     obj._signal = obj.view(Quantity)
     obj._start = Quantity(
         dto.start,
@@ -348,6 +348,7 @@ class RegularlySampledTimeSeries(SampledTimeSeries, i.RegularlySampledSignal):
     obj._stop = Quantity(
         dto.stop,
         dto.time_units)
+    obj._dto_regularly_sampled_time_series = dto
     return obj
 
   def getSelf(self):
@@ -377,27 +378,27 @@ class RegularlySampledTimeSeries(SampledTimeSeries, i.RegularlySampledSignal):
   def __str__(self):
     return str(self.__dict__)
     return """
-signal:          %s,
-signalbase:      %s,
-start:           %s,
-stop:            %s,
-length:          %s,
-sampling rate:   %s,
-step size:       %s,
-n sample points: %s""" %(
-   self.signal,
-   self.signal_base,
-   self.start,
-   self.stop,
-   self.length,
-   self.sampling_rate,
-   self.step_size,
-   self.n_sample_points,
-   )
+        signal:          %s,
+        signalbase:      %s,
+        start:           %s,
+        stop:            %s,
+        length:          %s,
+        sampling rate:   %s,
+        step size:       %s,
+        n sample points: %s""" %(
+           self.signal,
+           self.signal_base,
+           self.start,
+           self.stop,
+           self.length,
+           self.sampling_rate,
+           self.step_size,
+           self.n_sample_points,
+           )
 
   def __repr__(self):
-    return '(%s, %r, %s, %s, %r)' %(
-        #self.__class__.__name__,
+    return '%r(%s, %r, %s, %s, %r)' %(
+        self.__class__.__name__,
         self.signal.amount,
         self.signal.units,
         self.start.amount,
