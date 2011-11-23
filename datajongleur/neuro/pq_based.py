@@ -1,13 +1,30 @@
+import numpy as np
 from datajongleur.core.quantity import QuantitiesAdapter as Quantity
 from hashlib import sha1
 import json
 import numpy as np
 import datajongleur.core.interfaces as i
 import pdb
-
 def checksum_json(self):
   return sha1(self.getJSON()).hexdigest()
 
+
+################
+## Decorators ##
+################
+
+def passLKeyDTO(cls):
+  def getLKey(self):
+    try:
+      print "trying to get key"
+      return self.getDTO().getLKey()
+    except exception, e:
+      print exception
+      print e
+  cls.getLKey = getLKey
+  return cls
+
+## (end: Decorators) ##
 
 ################
 ## TimePoint ###
@@ -18,21 +35,31 @@ class TimePointDTO(object):
     self.time = time
     self.units = units
 
+  def getDict(self):
+    return {
+        'time': self.time,
+        'units': self.units}
+
   def getJSON(self):
-    return json.dumps({
-      'time': self.time,
-      'units': self.units})
+    return json.dumps(self.getDict())
 
   def checksum_json(self):
     return checksum_json(self)
 
   def getXML(self):
     from datajongleur.tools.xml_jongleur import dict2xml
-    d = {'time': self.time, 'units': self.units}
     xml = dict2xml(d)
     xml.display()
-    
+    return xml
 
+  def getLKey(self):
+    try:
+      return self.time_point_key
+    except:
+      print "No key available, yet!"
+
+
+@passLKeyDTO
 class TimePoint(Quantity):
   def __new__(cls, time, units):
     dto = TimePointDTO(time, units)
@@ -46,6 +73,9 @@ class TimePoint(Quantity):
         dto.units).view(cls)
     obj._dto_time_point = dto
     return obj
+
+  def getDTO(self):
+    return self._dto_time_point
 
   def getTime(self):
     return self 
@@ -85,18 +115,28 @@ class PeriodDTO(object):
   def checksum_json(self):
     return checksum_json(self)
 
+  def getLKey(self):
+    try:
+      return self.period_key
+    except:
+      print "No key available, yet!"
 
+
+@passLKeyDTO
 class Period(i.Interval):
   def __init__(self, start, stop, units):
     dto = PeriodDTO(start, stop, units)
-    self.__class__.initByDTO(dto)
-    
-  @classmethod
-  def initByDTO(self, dto):
     self._start_stop = Quantity(
           [dto.start, dto.stop],
           dto.units)
     self._dto_period = dto
+    
+  @classmethod
+  def newByDTO(cls, dto):
+    return Period(dto.start, dto.stop, dto.units)
+
+  def getDTO(self):
+    return self._dto_period
 
   def getStart(self):
     return self._start_stop[0]
@@ -144,9 +184,9 @@ class SampledTimeSeriesDTO(object):
       signal_units,
       signal_base,
       signal_base_units):
-    self.signal = signal
+    self.signal = np.array(signal)
     self.signal_units = signal_units
-    self.signal_base = signal_base
+    self.signal_base = np.array(signal_base)
     self.signal_base_units = signal_base_units
 
   def getJSON(self):
@@ -159,7 +199,13 @@ class SampledTimeSeriesDTO(object):
   def checksum_json(self):
     return checksum_json(self)
 
+  def getLKey(self):
+    try:
+      return self.sampled_time_series_key
+    except:
+      print "No key available, yet!"
 
+@passLKeyDTO
 class SampledTimeSeries(Quantity, i.SampledSignal, i.Interval):
   def __new__(cls,
       signal,
@@ -186,7 +232,11 @@ class SampledTimeSeries(Quantity, i.SampledSignal, i.Interval):
     obj._signal_base = Quantity(
         dto.signal_base,
         dto.signal_base_units)
+    obj._dto_sampled_time_series = dto
     return obj
+
+  def getDTO(self):
+    return self._dto_sampled_time_series
 
   # ----- Implementing Interval ------
   def getStart(self):
@@ -265,15 +315,22 @@ n sample points: %s""" %(
   
 class SpikeTimesDTO(object):
   def __init__(self,
-      spiketimes,
-      spiketimes_units):
-    self.spiketimes = spiketimes
-    self.spiketimes_units = spiketimes_units
+      spike_times,
+      spike_times_units):
+    self.spike_times = np.array(spike_times)
+    self.spike_times_units = spike_times_units
 
   def checksum_json(self):
     return checksum_json(self)
 
+  def getLKey(self):
+    try:
+      return self.spike_times_key
+    except:
+      print "No key available, yet!"
+
   
+@passLKeyDTO
 class SpikeTimes(SampledTimeSeries):
   """
   ``SpikeTimes`` are a special case of ``SampledSignal`` with value 1 for
@@ -300,8 +357,11 @@ class SpikeTimes(SampledTimeSeries):
     obj._signal_base = Quantity(
         dto.spiketimes, 
         dto.spiketimes_units)
+    obj._dto_sampled_time_series = dto
     return obj
 
+  def getDTO(self):
+    return self._dto_sampled_time_series
 
 ################################
 ## RegularlySampledTimeSeries ##
@@ -309,7 +369,7 @@ class SpikeTimes(SampledTimeSeries):
   
 class RegularlySampledTimeSeriesDTO(object):
   def __init__(self, sampled_signal, sampled_signal_units, start, stop, time_units):
-    self.sampled_signal = sampled_signal
+    self.sampled_signal = np.array(sampled_signal)
     self.sampled_signal_units = sampled_signal_units
     self.start = start
     self.stop = stop
@@ -318,7 +378,14 @@ class RegularlySampledTimeSeriesDTO(object):
   def checksum_json(self):
     return checksum_json(self)
 
+  def getLKey(self):
+    try:
+      return self.regularly_sampled_time_series_key
+    except:
+      print "No key available, yet!"
+
   
+@passLKeyDTO
 class RegularlySampledTimeSeries(SampledTimeSeries, i.RegularlySampledSignal):
   def __new__(cls,
       sampled_signal,
@@ -334,6 +401,7 @@ class RegularlySampledTimeSeries(SampledTimeSeries, i.RegularlySampledSignal):
         stop,
         time_units)
     obj = cls.newByDTO(dto)
+    obj._dto_regularly_sampled_time_series = dto
     return obj
 
   @classmethod
@@ -350,6 +418,9 @@ class RegularlySampledTimeSeries(SampledTimeSeries, i.RegularlySampledSignal):
         dto.time_units)
     obj._dto_regularly_sampled_time_series = dto
     return obj
+
+  def getDTO(self):
+    return self._dto_regularly_sampled_time_series
 
   def getSelf(self):
     return self
@@ -442,7 +513,7 @@ class BinnedSpikesDTO(object):
   integer values for ``signals`` and bin-times as ``signal_base``.
   """
   def __init__(self, sampled_signal, start, stop, time_units):
-    self.sampled_signal = sampled_signal
+    self.sampled_signal = np.array(sampled_signal, 'int')
     self.start = start
     self.stop = stop
     self.time_units = time_units
@@ -450,7 +521,14 @@ class BinnedSpikesDTO(object):
   def checksum_json(self):
     return checksum_json(self)
 
+  def getLKey(self):
+    try:
+      return self.binned_spikes_key
+    except:
+      print "No key available, yet!"
 
+
+@passLKeyDTO
 class BinnedSpikes(RegularlySampledTimeSeries):
   """
   ``BinnedSpikes`` are a special case of ``RegularlySamgledSignal`` with
@@ -480,7 +558,11 @@ class BinnedSpikes(RegularlySampledTimeSeries):
     obj._stop = Quantity(
         dto.stop,
         dto.time_units)
+    obj._dto_binned_spikes = dto
     return obj
+
+  def getDTO(self):
+    return self._dto_binned_spikes
 
   def __repr__(self):
     return '%s(%r, %r, %r, %r)' %(
