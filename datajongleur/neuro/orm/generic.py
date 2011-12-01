@@ -142,13 +142,16 @@ def addSAInstrumentedListAccess(attr_name, RealClass):
   return decorateClass
 
 
-@addSAInstrumentedListAccess('_period_dtos', Period)
-@addSAInstrumentedListAccess('_period_dtos', Period)
-@addSAInstrumentedListAccess('_period_dtos', Period)
-@addSAInstrumentedListAccess('_period_dtos', Period)
-@addSAInstrumentedListAccess('_period_dtos', Period)
-@addSAInstrumentedListAccess('_period_dtos', Period)
-@addSAInstrumentedListAccess('_period_dtos', Period)
+@addSAInstrumentedListAccess('_period_dtos_dtos',
+    Period)
+@addSAInstrumentedListAccess('_sampled_time_series_dtos',
+    SampledTimeSeries)
+@addSAInstrumentedListAccess('_spike_times_dtos',
+    SpikeTimes)
+@addSAInstrumentedListAccess('_regularly_sampled_time_series',
+    RegularlySampledTimeSeries)
+@addSAInstrumentedListAccess('_binned_spikes_dtos',
+    BinnedSpikes)
 class Container(object):
   def __init__(self, name):
     self.name = name
