@@ -1,9 +1,9 @@
-from datajongleur.models import Base, declarative_base
+from datajongleur.models import Base
+from datajongleur.neuro import 
 import sqlalchemy as sa
 import sqlalchemy.orm as orm
 
 PREFIX = 'neo_'
-
 
 class Block(object):
   __tablename__ = PREFIX + 'blocks'

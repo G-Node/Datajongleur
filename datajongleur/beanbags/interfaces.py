@@ -103,3 +103,21 @@ class RegularlySampledSignal(SampledSignal):
     raise NotImplementedError
   def getStepSize(self):
     raise NotImplementedError
+
+class DTO(object):
+  def getJSON(self):
+    """
+    To facilitate data-exchange.
+    """
+    raise NotImplementedError
+  def getDict(self):
+    raise NotImplementedError
+  def getXML(self):
+    """
+    To facilitate data-exchange.
+    """
+    raise NotImplementedError
+  def getChecksum(self):
+    raise NotImplementedError
+  def getLKey(self):
+    raise NotImplementedError

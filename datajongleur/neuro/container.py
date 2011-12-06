@@ -5,83 +5,9 @@ import sqlalchemy.orm as orm
 import datetime as dt
 from sqlalchemy import exc
 from datajongleur.neuro.pq_based import *
+from datajongleur.utils.sqlalchemy import NumpyType
 
 PREFIX = 'dj_neuro_'
-
-class NumpyType (sa.types.TypeDecorator):
-  impl = sa.types.LargeBinary
-
-  def process_bind_param(self, value, dialect):
-    return zlib.compress(value.dumps(), 9)
-
-  def process_result_value(self, value, dialect):
-    return np.loads(zlib.decompress(value))
-
-def map_pq_beanbags(metadata):
-  # Table specification
-  time_point_table = sa.Table(
-      PREFIX + 'time_points', metadata,
-      sa.Column('time_point_key', sa.Integer, primary_key=True),
-      sa.Column('time', sa.Float),
-      sa.Column('units', sa.String),
-      )
-
-  period_table = sa.Table(
-      PREFIX + 'periods', metadata,
-      sa.Column('period_key', sa.Integer, primary_key=True),
-      sa.Column('start', sa.Float),
-      sa.Column('stop', sa.Float),
-      sa.Column('units', sa.String),
-      )
-
-  sampled_time_series_table = sa.Table(
-      PREFIX + 'sampled_time_series', metadata,
-      sa.Column('sampled_time_series_key', sa.Integer, primary_key=True),
-      sa.Column('signal', NumpyType),
-      sa.Column('signal_units', sa.String),
-      sa.Column('signal_base', NumpyType),
-      sa.Column('signal_base_units', sa.String),
-      )
-
-  spike_times_table = sa.Table(
-      PREFIX + 'spike_times', metadata,
-      sa.Column('spike_times_key', sa.Integer, primary_key=True),
-      sa.Column('spike_times', NumpyType),
-      sa.Column('spike_times_units', sa.String),
-      )
-
-  regularly_sampled_time_series_table = sa.Table(
-      PREFIX + 'regularly_sampled_time_series', metadata,
-      sa.Column('regularly_sampled_time_series_key',
-        sa.Integer, primary_key=True),
-      sa.Column('sampled_signal', NumpyType),
-      sa.Column('sampled_signal_units', sa.String),
-      sa.Column('start', sa.Float),
-      sa.Column('stop', sa.Float),
-      sa.Column('time_units', sa.String),
-      )
-
-  binned_spikes_table = sa.Table(
-      PREFIX + 'binned_spikes', metadata,
-      sa.Column('binned_spikes_key', sa.Integer, primary_key=True),
-      sa.Column('sampled_signal', NumpyType),
-      sa.Column('start', sa.Float),
-      sa.Column('stop', sa.Float),
-      sa.Column('time_units', sa.String),
-      )
-
-  # Mapping
-  orm.mapper(TimePointDTO, time_point_table)
-  orm.mapper(PeriodDTO, period_table)
-  orm.mapper(SampledTimeSeriesDTO, sampled_time_series_table)
-  orm.mapper(SpikeTimesDTO, spike_times_table)
-  orm.mapper(
-      RegularlySampledTimeSeriesDTO,
-      regularly_sampled_time_series_table)
-  orm.mapper(BinnedSpikesDTO, binned_spikes_table)
-
-  # Create non existing tables
-  metadata.create_all()
 
 ####################
 # Container-Jongleur
@@ -152,6 +78,7 @@ def addSAInstrumentedListAccess(attr_name, RealClass):
     RegularlySampledTimeSeries)
 @addSAInstrumentedListAccess('_binned_spikes_dtos',
     BinnedSpikes)
+
 class Container(object):
   def __init__(self, name):
     self.name = name

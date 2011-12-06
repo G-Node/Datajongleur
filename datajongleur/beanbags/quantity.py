@@ -1,5 +1,4 @@
 import interfaces as i
-import numpy as np
 import quantities as pq
 
 ###################

@@ -1,13 +1,13 @@
 import numpy as np
-from datajongleur.core.quantity import QuantitiesAdapter as Quantity
-from hashlib import sha1
 import json
-import numpy as np
-import datajongleur.core.interfaces as i
 import pdb
-def checksum_json(self):
-  return sha1(self.getJSON()).hexdigest()
 
+import datajongleur.beanbags.interfaces as i
+from datajongleur.beanbags.quantity import QuantitiesAdapter as Quantity
+from datajongleur.neuro.models import *
+from datajongleur import DBSession
+
+session = DBSession()
 
 ################
 ## Decorators ##
@@ -26,43 +26,11 @@ def passLKeyDTO(cls):
 
 ## (end: Decorators) ##
 
-################
-## TimePoint ###
-################
-
-class TimePointDTO(object):
-  def __init__(self, time, units):
-    self.time = time
-    self.units = units
-
-  def getDict(self):
-    return {
-        'time': self.time,
-        'units': self.units}
-
-  def getJSON(self):
-    return json.dumps(self.getDict())
-
-  def checksum_json(self):
-    return checksum_json(self)
-
-  def getXML(self):
-    from datajongleur.tools.xml_jongleur import dict2xml
-    xml = dict2xml(d)
-    xml.display()
-    return xml
-
-  def getLKey(self):
-    try:
-      return self.time_point_key
-    except:
-      print "No key available, yet!"
-
 
 @passLKeyDTO
 class TimePoint(Quantity):
   def __new__(cls, time, units):
-    dto = TimePointDTO(time, units)
+    dto = DTOTimePoint(time, units)
     #obj = Quantity(time, units).view(cls)
     return cls.newByDTO(dto)
   
@@ -81,7 +49,7 @@ class TimePoint(Quantity):
     return self 
 
   def __repr__(self):
-    return "Moment(%s, %r)" %(self.getAmount(), self.getUnits())
+    return "%s(%s, %r)" %(self.__class__, self.getAmount(), self.getUnits())
 
   def __hash__(self):
     # different from `getHashValue` as python-hashs should be integer for usage
@@ -91,41 +59,20 @@ class TimePoint(Quantity):
   def getHashValue(self):
     return sha1(self.__repr__()).hexdigest()
 
+  def save(self):
+    session.add (self._dto_time_point)
+    session.commit ()
+
   # ------- Mapping Properties -----------
   time = property(
       getTime,
       i.Value.throwSetImmutableAttributeError)
 
-############
-## Period ##
-############
-
-class PeriodDTO(object):
-  def __init__(self, start, stop, units):
-    self.start = start
-    self.stop = stop
-    self.units = units
-
-  def getJSON(self):
-    return json.dumps({
-      'start': self.start,
-      'stop': self.stop,
-      'units': self.units})
-
-  def checksum_json(self):
-    return checksum_json(self)
-
-  def getLKey(self):
-    try:
-      return self.period_key
-    except:
-      print "No key available, yet!"
-
 
 @passLKeyDTO
 class Period(i.Interval):
   def __init__(self, start, stop, units):
-    dto = PeriodDTO(start, stop, units)
+    dto = DTOPeriod(start, stop, units)
     self._start_stop = Quantity(
           [dto.start, dto.stop],
           dto.units)
@@ -174,37 +121,6 @@ length: %s
   length = property(getLength)
 
 
-#######################
-## SampledTimeSeries ##
-#######################
-
-class SampledTimeSeriesDTO(object):
-  def __init__(self,
-      signal,
-      signal_units,
-      signal_base,
-      signal_base_units):
-    self.signal = np.array(signal)
-    self.signal_units = signal_units
-    self.signal_base = np.array(signal_base)
-    self.signal_base_units = signal_base_units
-
-  def getJSON(self):
-    return json.dumps({
-      'signal': self.start,
-      'signal_units': self.stop,
-      'signal_base': self.signal_base,
-      'signal_base_units': self.signal_base_units})
-
-  def checksum_json(self):
-    return checksum_json(self)
-
-  def getLKey(self):
-    try:
-      return self.sampled_time_series_key
-    except:
-      print "No key available, yet!"
-
 @passLKeyDTO
 class SampledTimeSeries(Quantity, i.SampledSignal, i.Interval):
   def __new__(cls,
@@ -215,7 +131,7 @@ class SampledTimeSeries(Quantity, i.SampledSignal, i.Interval):
     #: Call the parent class constructor
     assert len(signal) == len(signal_base),\
         "len(signal) != len(signal_base)."
-    dto = SampledTimeSeriesDTO(
+    dto = DTOSampledTimeSeries(
         signal,
         signal_units,
         signal_base,
@@ -308,27 +224,6 @@ n sample points: %s""" %(
       getLength,
       i.Value.throwSetImmutableAttributeError)
 
-
-################
-## SpikeTimes ##
-################
-  
-class SpikeTimesDTO(object):
-  def __init__(self,
-      spike_times,
-      spike_times_units):
-    self.spike_times = np.array(spike_times)
-    self.spike_times_units = spike_times_units
-
-  def checksum_json(self):
-    return checksum_json(self)
-
-  def getLKey(self):
-    try:
-      return self.spike_times_key
-    except:
-      print "No key available, yet!"
-
   
 @passLKeyDTO
 class SpikeTimes(SampledTimeSeries):
@@ -337,12 +232,12 @@ class SpikeTimes(SampledTimeSeries):
   ``signals`` and spike times as ``signal_base``, respectively.
   """
   def __new__(cls,
-      spiketimes,
-      spiketimes_units):
+      spike_times,
+      spike_times_units):
     #: Call the parent class constructor
-    dto = SpikeTimesDTO(
-        spiketimes,
-        spiketimes_units)
+    dto = DTOSpikeTimes(
+        spike_times,
+        spike_times_units)
     obj = cls.newByDTO(dto)
     obj._dto_spike_times = dto
     return obj
@@ -350,39 +245,18 @@ class SpikeTimes(SampledTimeSeries):
   @classmethod
   def newByDTO(cls, dto):
     obj = Quantity(
-        dto.spiketimes,
-        dto.spiketimes_units).view(cls)
+        dto.spike_times,
+        dto.spike_times_units).view(cls)
     obj._signal = Quantity(np.ones(len(
-      dto.spiketimes)), dtype=bool)
+      dto.spike_times)), dtype=bool)
     obj._signal_base = Quantity(
-        dto.spiketimes, 
-        dto.spiketimes_units)
+        dto.spike_times, 
+        dto.spike_times_units)
     obj._dto_sampled_time_series = dto
     return obj
 
   def getDTO(self):
     return self._dto_sampled_time_series
-
-################################
-## RegularlySampledTimeSeries ##
-################################
-  
-class RegularlySampledTimeSeriesDTO(object):
-  def __init__(self, sampled_signal, sampled_signal_units, start, stop, time_units):
-    self.sampled_signal = np.array(sampled_signal)
-    self.sampled_signal_units = sampled_signal_units
-    self.start = start
-    self.stop = stop
-    self.time_units = time_units
-
-  def checksum_json(self):
-    return checksum_json(self)
-
-  def getLKey(self):
-    try:
-      return self.regularly_sampled_time_series_key
-    except:
-      print "No key available, yet!"
 
   
 @passLKeyDTO
@@ -394,7 +268,7 @@ class RegularlySampledTimeSeries(SampledTimeSeries, i.RegularlySampledSignal):
       stop,
       time_units):
     #: Call the parent class constructor
-    dto = RegularlySampledTimeSeriesDTO(
+    dto = DTORegularlySampledTimeSeries(
         sampled_signal,
         sampled_signal_units,
         start,
@@ -503,31 +377,6 @@ class RegularlySampledTimeSeries(SampledTimeSeries, i.RegularlySampledSignal):
       i.Value.throwSetImmutableAttributeError)
 
 
-##################
-## BinnedSpikes ##
-##################
-
-class BinnedSpikesDTO(object):
-  """
-  ``BinnedSpikes`` are a special case of ``RegularlySamgledSignal`` with
-  integer values for ``signals`` and bin-times as ``signal_base``.
-  """
-  def __init__(self, sampled_signal, start, stop, time_units):
-    self.sampled_signal = np.array(sampled_signal, 'int')
-    self.start = start
-    self.stop = stop
-    self.time_units = time_units
-
-  def checksum_json(self):
-    return checksum_json(self)
-
-  def getLKey(self):
-    try:
-      return self.binned_spikes_key
-    except:
-      print "No key available, yet!"
-
-
 @passLKeyDTO
 class BinnedSpikes(RegularlySampledTimeSeries):
   """
@@ -538,7 +387,7 @@ class BinnedSpikes(RegularlySampledTimeSeries):
     #: Call the parent class constructor
     assert np.array(sampled_signal).dtype == 'int',\
         "sample signal has to be of type 'int'"
-    dto = BinnedSpikesDTO(
+    dto = DTOBinnedSpikes(
         sampled_signal,
         start,
         stop,
@@ -573,17 +422,29 @@ class BinnedSpikes(RegularlySampledTimeSeries):
         self.stop.units)
 
 if __name__ == '__main__':
-  # Test MomentDTO
-  a_dto = MomentDTO(1, 'ms')
-  # Test Moment
-  a = Moment(1, "ms")
-  b = Moment(2, "ms")
-  c = Moment(2, "ms")
+  from datajongleur.utils.sa import get_test_session
+  session = get_test_session(Base)
+  # Test DTOTimePoint
+  a_dto = DTOTimePoint(1, 'ms')
+  # Test TimePoint
+  a = TimePoint(1, "ms")
+  b = TimePoint(2, "ms")
+  c = TimePoint(2, "ms")
+  session.add(a)
+  session.add(b)
+  session.add(c)
+  session.commit()
   print (a==b)
   print (b==c)
   p = Period(1,2,"s")
   q = Quantity([1,2,3], 'mV')
-  spiketimes = SpikeTimes([1.3, 1.9, 2.5], "ms")
+  spike_times = SpikeTimes([1.3, 1.9, 2.5], "ms")
   rsts = RegularlySampledTimeSeries([1,2,3],"mV", 1, 5, "s")
   sts = SampledTimeSeries([1,2,3], 'mV', [1,4,7], 's')
+  session.add(p)
+  session.add(q)
+  session.add(spike_times)
+  session.add(rsts)
+  session.add(sts)
+  session.commit ()
   print (rsts * 2)
