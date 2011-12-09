@@ -1,3 +1,5 @@
+from sqlalchemy.orm import object_session
+from sqlalchemy.orm.util import has_identity
 import numpy as np
 import json
 import pdb
@@ -9,24 +11,51 @@ from datajongleur import DBSession
 
 session = DBSession()
 
-################
-## Decorators ##
-################
+#######################
+## Decorators        ##
 
 def passLKeyDTO(cls):
   def getLKey(self):
     try:
-      print "trying to get key"
-      return self.getDTO().getLKey()
+      dto = self.getDTO()
+      print has_identity(dto)
+      if has_identity(dto):
+        return self.getDTO().getLKey()
+      print "No DB-Key available. Did you save the object already?"
+      return
     except exception, e:
       print exception
       print e
   cls.getLKey = getLKey
+  cls.l_key = property(cls.getLKey)
   return cls
 
+def addDBAccess(dto_cls, dto_l_key_attr_name):
+  def decorateClass(cls):
+    @classmethod
+    def newBySession(cls, l_key):
+      dto = session.query(dto_cls).filter(
+          getattr(dto_cls, dto_l_key_attr_name) == l_key).first()
+      return cls.newByDTO(dto)
+    @classmethod
+    def load(cls, l_key):
+      return cls.newBySession(l_key)
+    def save(self):
+      dto = self.getDTO()
+      session.add (dto)
+      session.commit ()
+      print "Assigned `l_key`: %d" %(dto.getLKey())
+      
+    cls.newBySession = newBySession
+    cls.load = load
+    cls.save = save
+    return cls
+  return decorateClass
+
 ## (end: Decorators) ##
+#######################
 
-
+@addDBAccess(DTOTimePoint, 'time_point_key')
 @passLKeyDTO
 class TimePoint(Quantity):
   def __new__(cls, time, units):
@@ -59,9 +88,6 @@ class TimePoint(Quantity):
   def getHashValue(self):
     return sha1(self.__repr__()).hexdigest()
 
-  def save(self):
-    session.add (self._dto_time_point)
-    session.commit ()
 
   # ------- Mapping Properties -----------
   time = property(
@@ -69,6 +95,7 @@ class TimePoint(Quantity):
       i.Value.throwSetImmutableAttributeError)
 
 
+@addDBAccess(DTOPeriod, 'period_key')
 @passLKeyDTO
 class Period(i.Interval):
   def __init__(self, start, stop, units):
@@ -97,17 +124,17 @@ class Period(i.Interval):
   def __hash__(self):
     # different from `getHashValue` as python-hashs should be integer for usage
     return hash(self.__repr__())
-
+  
   def getHashValue(self):
     return sha1(self.__repr__()).hexdigest()
-
+  
   def __str__(self):
     return """\
-start:  %s
-stop:   %s
-length: %s    
-""" %(self.start, self.stop, self.length)
-
+  start:  %s
+  stop:   %s
+  length: %s    
+  """ %(self.start, self.stop, self.length)
+  
   def __repr__(self):
     return '%s(%s, %s, %r)' %(
         self.__class__.__name__,
@@ -121,6 +148,7 @@ length: %s
   length = property(getLength)
 
 
+@addDBAccess(DTOSampledTimeSeries, 'sampled_time_series_key')
 @passLKeyDTO
 class SampledTimeSeries(Quantity, i.SampledSignal, i.Interval):
   def __new__(cls,
@@ -177,12 +205,12 @@ class SampledTimeSeries(Quantity, i.SampledSignal, i.Interval):
   # ----- Implementing Value  ------
   def __str__(self):
     return """
-signal:          %s,
-signalbase:      %s,
-start:           %s,
-stop:            %s,
-length:          %s,
-n sample points: %s""" %(
+  signal:          %s,
+  signalbase:      %s,
+  start:           %s,
+  stop:            %s,
+  length:          %s,
+  n sample points: %s""" %(
    self.signal,
    self.signal_base,
    self.start,
@@ -225,6 +253,7 @@ n sample points: %s""" %(
       i.Value.throwSetImmutableAttributeError)
 
   
+@addDBAccess(DTOSpikeTimes, 'spike_times_key')
 @passLKeyDTO
 class SpikeTimes(SampledTimeSeries):
   """
@@ -259,6 +288,8 @@ class SpikeTimes(SampledTimeSeries):
     return self._dto_sampled_time_series
 
   
+@addDBAccess(DTORegularlySampledTimeSeries,
+    'regularly_sampled_time_series_key')
 @passLKeyDTO
 class RegularlySampledTimeSeries(SampledTimeSeries, i.RegularlySampledSignal):
   def __new__(cls,
@@ -377,6 +408,7 @@ class RegularlySampledTimeSeries(SampledTimeSeries, i.RegularlySampledSignal):
       i.Value.throwSetImmutableAttributeError)
 
 
+@addDBAccess(DTOBinnedSpikes, 'binned_spikes_key')
 @passLKeyDTO
 class BinnedSpikes(RegularlySampledTimeSeries):
   """
@@ -427,24 +459,26 @@ if __name__ == '__main__':
   # Test DTOTimePoint
   a_dto = DTOTimePoint(1, 'ms')
   # Test TimePoint
-  a = TimePoint(1, "ms")
-  b = TimePoint(2, "ms")
-  c = TimePoint(2, "ms")
-  session.add(a)
-  session.add(b)
-  session.add(c)
-  session.commit()
-  print (a==b)
-  print (b==c)
-  p = Period(1,2,"s")
-  q = Quantity([1,2,3], 'mV')
+  a = TimePoint.newByDTO(a_dto)
+  a.save
   spike_times = SpikeTimes([1.3, 1.9, 2.5], "ms")
+  p = Period(1,2,"s")
   rsts = RegularlySampledTimeSeries([1,2,3],"mV", 1, 5, "s")
   sts = SampledTimeSeries([1,2,3], 'mV', [1,4,7], 's')
-  session.add(p)
-  session.add(q)
-  session.add(spike_times)
-  session.add(rsts)
-  session.add(sts)
-  session.commit ()
-  print (rsts * 2)
+  if False:
+    q = Quantity([1,2,3], 'mV')
+    b = TimePoint(2, "ms")
+    c = TimePoint(2, "ms")
+    session.add(a)
+    session.add(b)
+    session.add(c)
+    session.commit()
+    print (a==b)
+    print (b==c)
+    session.add(p)
+    session.add(q)
+    session.add(spike_times)
+    session.add(rsts)
+    session.add(sts)
+    session.commit ()
+    print (rsts * 2)

@@ -105,8 +105,9 @@ class DTOSampledTimeSeries(Base):
   def getLKey(self):
     try:
       return self.sampled_time_series_key
-    except:
-      print "No key available, yet!"
+    except Exception:
+      print "%s, Some error happend..." %(Exception)
+      return Exception
 
 
 class DTOSpikeTimes(Base):

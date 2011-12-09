@@ -1,3 +1,5 @@
+import numpy as np
+import zlib
 import sqlalchemy as sa
 from datajongleur import DBSession
 
@@ -13,7 +15,7 @@ class NumpyType (sa.types.TypeDecorator):
     return np.loads(zlib.decompress(value))
 
 def get_test_session(Base):
-  engine = sa.create_engine ('sqlite:///test.sqlite', echo=True)
+  engine = sa.create_engine ('sqlite:///test.sqlite', echo=False)
   Base.metadata.bind = engine
   Base.metadata.create_all ()
   session = DBSession ()
