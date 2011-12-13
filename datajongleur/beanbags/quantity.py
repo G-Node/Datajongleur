@@ -69,7 +69,6 @@ class QuantitiesAdapter(pq.Quantity, i.Quantity):
       setattr(cls, functionName, foo)
   # ----------------------------------------------------------------------
 
-
 if __name__ == '__main__':
   a = QuantitiesAdapter([2,3], "mV")
   b = QuantitiesAdapter(1, "s")

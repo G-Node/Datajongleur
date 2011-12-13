@@ -1,11 +1,10 @@
 import sqlalchemy as sa
 import numpy as np
 import sqlalchemy.orm as orm
-from datajongleur import Base
+from datajongleur import Base, DBSession
 from datajongleur.utils.sa import NumpyType
 
-PREFIX = 'neuro_'
-
+PREFIX = 'dj_neuro_'
 
 class DTOTimePoint(Base):
   __tablename__ =  PREFIX + 'time_points'
@@ -192,6 +191,10 @@ class DTOBinnedSpikes(Base):
     except:
       print "No key available, yet!"
 
+def initialize_sql(engine):
+  DBSession.configure(bind=engine)
+  Base.metadata.bind = engine
+  Base.metadata.create_all(engine)
 
 if __name__ == "__main__":
   from datajongleur.utils.sa import get_test_session

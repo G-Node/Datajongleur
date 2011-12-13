@@ -7,9 +7,10 @@ import pdb
 import datajongleur.beanbags.interfaces as i
 from datajongleur.beanbags.quantity import QuantitiesAdapter as Quantity
 from datajongleur.neuro.models import *
-from datajongleur import DBSession
+#from datajongleur import DBSession
 
-session = DBSession()
+def getSession():
+  return DBSession()
 
 #######################
 ## Decorators        ##
@@ -18,13 +19,11 @@ def passLKeyDTO(cls):
   def getLKey(self):
     try:
       dto = self.getDTO()
-      print has_identity(dto)
       if has_identity(dto):
         return self.getDTO().getLKey()
-      print "No DB-Key available. Did you save the object already?"
       return
-    except exception, e:
-      print exception
+    except Exception, e:
+      print Exception
       print e
   cls.getLKey = getLKey
   cls.l_key = property(cls.getLKey)
@@ -34,17 +33,23 @@ def addDBAccess(dto_cls, dto_l_key_attr_name):
   def decorateClass(cls):
     @classmethod
     def newBySession(cls, l_key):
-      dto = session.query(dto_cls).filter(
+      if not hasattr(cls, "_session"):
+        cls.session = getSession()
+      dto = cls.session.query(dto_cls).filter(
           getattr(dto_cls, dto_l_key_attr_name) == l_key).first()
       return cls.newByDTO(dto)
     @classmethod
     def load(cls, l_key):
       return cls.newBySession(l_key)
     def save(self):
+      if not hasattr(self, "session"):
+        self.__class__.session = getSession()
       dto = self.getDTO()
-      session.add (dto)
-      session.commit ()
-      print "Assigned `l_key`: %d" %(dto.getLKey())
+      l_key = self.getLKey()
+      self.session.add (dto)
+      self.session.commit ()
+      if l_key is not self.l_key:
+        print "Assigned attribute `l_key`"
       
     cls.newBySession = newBySession
     cls.load = load
@@ -59,26 +64,48 @@ def addDBAccess(dto_cls, dto_l_key_attr_name):
 @passLKeyDTO
 class TimePoint(Quantity):
   def __new__(cls, time, units):
+    print "1"
     dto = DTOTimePoint(time, units)
-    #obj = Quantity(time, units).view(cls)
+    print "2"
     return cls.newByDTO(dto)
-  
+
+  def __array_finalize__(self, obj):
+    super(TimePoint, self).__array_finalize__(obj)
+    print type(obj)
+    if not type(obj) == self.__class__.__base__:
+      """
+      This will be executed when
+
+      * ``self.copy()``
+      * arithmetics, e.g. `self + self`
+      """
+      print "new instance"
+      self._dto_time_point = DTOTimePoint(self.amount, self.units)
+
   @classmethod
   def newByDTO(cls, dto):
+    print "3"
     obj = Quantity(
         dto.time,
         dto.units).view(cls)
     obj._dto_time_point = dto
+    print "4"
     return obj
 
   def getDTO(self):
+    if not hasattr(self, '_dto_time_point'):
+      dto = DTOTimePoint(self.amount, self.units)
+      self._dto_time_point = dto
     return self._dto_time_point
 
   def getTime(self):
     return self 
 
   def __repr__(self):
-    return "%s(%s, %r)" %(self.__class__, self.getAmount(), self.getUnits())
+    return "%s(%s, %r)" %(
+        self.__class__.__name__,
+        self.getAmount(),
+        self.getUnits())
 
   def __hash__(self):
     # different from `getHashValue` as python-hashs should be integer for usage

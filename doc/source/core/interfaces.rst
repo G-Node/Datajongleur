@@ -8,6 +8,8 @@
 Interfaces
 ==========
 
+:download:`Here: schema of core interfaces </_download/core_interfaces.pdf>`.
+  
 All classes are conform to fundamental interfaces. Here, ``BaseValue``
 (see `Heise Developer (DE)`_)and ``BaseQuantity`` (see `Martin Fowler`_) are
 the core interfaces:
@@ -31,10 +33,6 @@ Three more interfaces resemble the nature of measurements:
 * ``SampledSignal``
 * ``RegularlySampledSignal``
 
-For an overview see
-
-* :download:`core interfaces </_download/core_interfaces.pdf>`.
-  
 Note: For convenience, all ``getters`` and ``setters`` are accessible via
 properties (``instance.getAmount()`` -> ``instance.amount``).
 
