@@ -13,6 +13,8 @@ class DTOTimePoint(Base):
   time = sa.Column('time', sa.Float)
   units = sa.Column('units', sa.String)
 
+  _dto_attributes = ['time', 'units']
+
   def __init__(self, time, units):
     self.time = time
     self.units = units
@@ -40,6 +42,11 @@ class DTOTimePoint(Base):
     except:
       print "No key available, yet!"
 
+  def __repr__(self):
+    return "%s(%s, %r)" %(
+        self.__class__.__name__,
+        self.time,
+        self.units)
 
 class DTOPeriod(Base):
   __tablename__ = PREFIX + 'periods'

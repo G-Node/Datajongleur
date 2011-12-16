@@ -63,40 +63,39 @@ def addDBAccess(dto_cls, dto_l_key_attr_name):
 @addDBAccess(DTOTimePoint, 'time_point_key')
 @passLKeyDTO
 class TimePoint(Quantity):
+  _DTO = DTOTimePoint
+
   def __new__(cls, time, units):
-    print "1"
-    dto = DTOTimePoint(time, units)
-    print "2"
+    dto = cls._DTO(time, units)
     return cls.newByDTO(dto)
 
   def __array_finalize__(self, obj):
-    super(TimePoint, self).__array_finalize__(obj)
-    print type(obj)
-    if not type(obj) == self.__class__.__base__:
-      """
-      This will be executed when
+    """
+    Attaches DTO-object
+    """
+    super(self.__class__, self).__array_finalize__ (obj)
+    self._dto = self.__class__._DTO(self.amount, self.units) # PR: ADJUST!
 
-      * ``self.copy()``
-      * arithmetics, e.g. `self + self`
-      """
-      print "new instance"
-      self._dto_time_point = DTOTimePoint(self.amount, self.units)
+  def __array_wrap__(self, obj, context=None):
+    """
+    Attaches DTO-object in case of arithmetic, e.g. ``a + b``
+    """
+    obj = super(self.__class__, self).__array_wrap__ (obj, context)
+    obj._dto.units = obj.units
+    return obj
 
   @classmethod
   def newByDTO(cls, dto):
-    print "3"
     obj = Quantity(
         dto.time,
         dto.units).view(cls)
-    obj._dto_time_point = dto
-    print "4"
     return obj
 
   def getDTO(self):
-    if not hasattr(self, '_dto_time_point'):
-      dto = DTOTimePoint(self.amount, self.units)
-      self._dto_time_point = dto
-    return self._dto_time_point
+    if not hasattr(self, '_dto'):
+      dto = self.__class__._DTO(self.amount, self.units)
+      self._dto = dto
+    return self._dto
 
   def getTime(self):
     return self 

@@ -31,6 +31,7 @@ class QuantitiesAdapter(pq.Quantity, i.Quantity):
   # The following lines won't be necessary after a fork in the
   # python-quantities packages
   #
+  """
   @staticmethod
   def adjust_return_types(cls, parent_cls):
 
@@ -46,7 +47,7 @@ class QuantitiesAdapter(pq.Quantity, i.Quantity):
         function = getattr(parent_cls, functionName)
         return function(self, *args, **kwargs)
       return foo
-
+  
     # adjusting return types of analysis functions
     functionNames = [
         'min',
@@ -67,6 +68,7 @@ class QuantitiesAdapter(pq.Quantity, i.Quantity):
     for functionName in functionNames:
       foo = generateAdjustedFunction(parent_cls, functionName)
       setattr(cls, functionName, foo)
+  """
   # ----------------------------------------------------------------------
 
 if __name__ == '__main__':
