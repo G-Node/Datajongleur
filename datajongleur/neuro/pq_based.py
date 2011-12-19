@@ -1,101 +1,19 @@
 from sqlalchemy.orm import object_session
-from sqlalchemy.orm.util import has_identity
 import numpy as np
 import json
 import pdb
 
 import datajongleur.beanbags.interfaces as i
-from datajongleur.beanbags.quantity import QuantitiesAdapter as Quantity
+from datajongleur.beanbags.quantity import Quantity 
+from datajongleur.beanbags.quantity import InfoQuantity
 from datajongleur.neuro.models import *
 #from datajongleur import DBSession
 
-def getSession():
-  return DBSession()
-
-#######################
-## Decorators        ##
-
-def passLKeyDTO(cls):
-  def getLKey(self):
-    try:
-      dto = self.getDTO()
-      if has_identity(dto):
-        return self.getDTO().getLKey()
-      return
-    except Exception, e:
-      print Exception
-      print e
-  cls.getLKey = getLKey
-  cls.l_key = property(cls.getLKey)
-  return cls
-
-def addDBAccess(dto_cls, dto_l_key_attr_name):
-  def decorateClass(cls):
-    @classmethod
-    def newBySession(cls, l_key):
-      if not hasattr(cls, "_session"):
-        cls.session = getSession()
-      dto = cls.session.query(dto_cls).filter(
-          getattr(dto_cls, dto_l_key_attr_name) == l_key).first()
-      return cls.newByDTO(dto)
-    @classmethod
-    def load(cls, l_key):
-      return cls.newBySession(l_key)
-    def save(self):
-      if not hasattr(self, "session"):
-        self.__class__.session = getSession()
-      dto = self.getDTO()
-      l_key = self.getLKey()
-      self.session.add (dto)
-      self.session.commit ()
-      if l_key is not self.l_key:
-        print "Assigned attribute `l_key`"
-      
-    cls.newBySession = newBySession
-    cls.load = load
-    cls.save = save
-    return cls
-  return decorateClass
-
-## (end: Decorators) ##
-#######################
 
 @addDBAccess(DTOTimePoint, 'time_point_key')
 @passLKeyDTO
-class TimePoint(Quantity):
+class TimePoint(InfoQuantity):
   _DTO = DTOTimePoint
-
-  def __new__(cls, time, units):
-    dto = cls._DTO(time, units)
-    return cls.newByDTO(dto)
-
-  def __array_finalize__(self, obj):
-    """
-    Attaches DTO-object
-    """
-    super(self.__class__, self).__array_finalize__ (obj)
-    self._dto = self.__class__._DTO(self.amount, self.units) # PR: ADJUST!
-
-  def __array_wrap__(self, obj, context=None):
-    """
-    Attaches DTO-object in case of arithmetic, e.g. ``a + b``
-    """
-    obj = super(self.__class__, self).__array_wrap__ (obj, context)
-    obj._dto.units = obj.units
-    return obj
-
-  @classmethod
-  def newByDTO(cls, dto):
-    obj = Quantity(
-        dto.time,
-        dto.units).view(cls)
-    return obj
-
-  def getDTO(self):
-    if not hasattr(self, '_dto'):
-      dto = self.__class__._DTO(self.amount, self.units)
-      self._dto = dto
-    return self._dto
 
   def getTime(self):
     return self 
@@ -114,7 +32,6 @@ class TimePoint(Quantity):
   def getHashValue(self):
     return sha1(self.__repr__()).hexdigest()
 
-
   # ------- Mapping Properties -----------
   time = property(
       getTime,
@@ -123,29 +40,32 @@ class TimePoint(Quantity):
 
 @addDBAccess(DTOPeriod, 'period_key')
 @passLKeyDTO
-class Period(i.Interval):
-  def __init__(self, start, stop, units):
-    dto = DTOPeriod(start, stop, units)
-    self._start_stop = Quantity(
-          [dto.start, dto.stop],
-          dto.units)
-    self._dto_period = dto
-    
+class Period(InfoQuantity, i.Interval):
+  _DTO = DTOPeriod
+
   @classmethod
   def newByDTO(cls, dto):
-    return Period(dto.start, dto.stop, dto.units)
+    obj = Quantity(
+        [dto.start, dto.stop],
+        dto.units,
+        ).view(cls)
+    obj._dto = dto
+    return obj
+
+  def __getitem__(self, key):
+    return Quantity.__getitem__(self.view(Quantity), key)
 
   def getDTO(self):
-    return self._dto_period
+    return self._dto
 
   def getStart(self):
-    return self._start_stop[0]
+    return self[0]
 
   def getStop(self):
-    return self._start_stop[1]
+    return self[1]
 
   def getLength(self):
-    return np.diff(self._start_stop)[0]
+    return np.diff(self)[0]
 
   def __hash__(self):
     # different from `getHashValue` as python-hashs should be integer for usage
@@ -162,11 +82,11 @@ class Period(i.Interval):
   """ %(self.start, self.stop, self.length)
   
   def __repr__(self):
-    return '%s(%s, %s, %r)' %(
+    return '%s([%s, %s], %r)' %(
         self.__class__.__name__,
-        self.getStart().getAmount(),
-        self.getStop().getAmount(),
-        self.getStart().getUnits())
+        self.amount[0],
+        self.amount[1],
+        self.units)
 
   # ------- Mapping Properties -----------
   start = property(getStart)
@@ -181,7 +101,9 @@ class SampledTimeSeries(Quantity, i.SampledSignal, i.Interval):
       signal,
       signal_units,
       signal_base,
-      signal_base_units):
+      signal_base_units,
+      **kwargs # to catch e.g. ``dtype``, ``copy`` attributes
+      ):
     #: Call the parent class constructor
     assert len(signal) == len(signal_base),\
         "len(signal) != len(signal_base)."
@@ -288,7 +210,9 @@ class SpikeTimes(SampledTimeSeries):
   """
   def __new__(cls,
       spike_times,
-      spike_times_units):
+      spike_times_units,
+      **kwargs # to catch e.g. ``dtype``, ``copy`` attributes
+      ):
     #: Call the parent class constructor
     dto = DTOSpikeTimes(
         spike_times,
@@ -323,7 +247,9 @@ class RegularlySampledTimeSeries(SampledTimeSeries, i.RegularlySampledSignal):
       sampled_signal_units,
       start,
       stop,
-      time_units):
+      time_units,
+      **kwargs # to catch e.g. ``dtype``, ``copy`` attributes
+      ):
     #: Call the parent class constructor
     dto = DTORegularlySampledTimeSeries(
         sampled_signal,
@@ -441,7 +367,14 @@ class BinnedSpikes(RegularlySampledTimeSeries):
   ``BinnedSpikes`` are a special case of ``RegularlySamgledSignal`` with
   integer values for ``signals`` and bin-times as ``signal_base``.
   """
-  def __new__(cls, sampled_signal, start, stop, time_units):
+  def __new__(
+      cls,
+      sampled_signal,
+      start,
+      stop,
+      time_units,
+      **kwargs # to catch e.g. ``dtype``, ``copy`` attributes
+      ):
     #: Call the parent class constructor
     assert np.array(sampled_signal).dtype == 'int',\
         "sample signal has to be of type 'int'"

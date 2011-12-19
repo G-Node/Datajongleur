@@ -2,7 +2,9 @@ import sqlalchemy as sa
 import numpy as np
 import sqlalchemy.orm as orm
 from datajongleur import Base, DBSession
-from datajongleur.utils.sa import NumpyType
+import uuid
+from datajongleur.utils.sa import NumpyType, GUID
+from datajongleur.utils.sa import passLKeyDTO, addDBAccess
 
 PREFIX = 'dj_neuro_'
 
@@ -10,18 +12,20 @@ class DTOTimePoint(Base):
   __tablename__ =  PREFIX + 'time_points'
 
   time_point_key =  sa.Column('time_point_key', sa.Integer, primary_key=True)
-  time = sa.Column('time', sa.Float)
+  time_point_uuid = sa.Column('time_point_uuid', GUID, unique=True,
+      default=uuid.uuid4)
+  amount = sa.Column('amount', sa.Float)
   units = sa.Column('units', sa.String)
 
-  _dto_attributes = ['time', 'units']
+  _dto_attributes = ['amount', 'units']
 
-  def __init__(self, time, units):
-    self.time = time
+  def __init__(self, amount, units, **kwargs):
+    self.amount = amount
     self.units = units
 
   def getDict(self):
     return {
-        'time': self.time,
+        'amount': self.amount,
         'units': self.units}
 
   def getJSON(self):
@@ -45,7 +49,7 @@ class DTOTimePoint(Base):
   def __repr__(self):
     return "%s(%s, %r)" %(
         self.__class__.__name__,
-        self.time,
+        self.amount,
         self.units)
 
 class DTOPeriod(Base):
@@ -56,9 +60,14 @@ class DTOPeriod(Base):
   stop = sa.Column('stop', sa.Float)
   units = sa.Column('units', sa.String)
 
-  def __init__(self, start, stop, units):
-    self.start = start
-    self.stop = stop
+  def __init__(self, amount, units, **kwargs):
+    try:
+      self.start = amount[0]
+      self.stop = amount[1]
+    except IndexError, e:
+      print e
+      self.start = amount
+      self.stop = amount
     self.units = units
 
   def getJSON(self):
@@ -75,6 +84,13 @@ class DTOPeriod(Base):
       return self.period_key
     except:
       print "No key available, yet!"
+
+  def __repr__(self):
+    return "%s(start=%s, stop=%s, units=%r)" %(
+        self.__class__.__name__,
+        self.start,
+        self.stop,
+        self.units)
 
 
 class DTOSampledTimeSeries(Base):

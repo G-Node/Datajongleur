@@ -77,7 +77,7 @@ object reference but the content of the object:
 
 .. testoutput:: pq_based
 
-  TimePoint(2.0, 'ms')
+  Quantity(2.0, 'ms')
   True
 
 Implements ``Quantity`` and inherits from ``QuantitiesAdapter``. Therefore you
@@ -104,16 +104,18 @@ Implements ``Interval``.
 
 .. testcode:: pq_based
 
-  p = Period(1,2,"s")
-  print p.length # see interface Interval
-  print p.start
-  print p.stop
+  p = Period([2,5],"s")
+  print repr (p.start)
+  print repr (p.stop)
+  print repr (p.length)
+  print repr (p[0])
 
 .. testoutput:: pq_based
 
-  1 s
-  1 s
-  2 s
+  Quantity(2, 's')
+  Quantity(5, 's')
+  Quantity(3, 's')
+  Quantity(2, 's')
 
 ``SampledTimeSeries``
 ---------------------
