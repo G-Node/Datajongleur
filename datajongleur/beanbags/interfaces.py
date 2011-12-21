@@ -89,7 +89,7 @@ class DTOInfoQuantity (Quantity):
     raise NotImplementedError
   def getChecksum (self):
     raise NotImplementedError
-  def getLKey (self):
+  def getKey (self):
     raise NotImplementedError
   ###
   amount = None

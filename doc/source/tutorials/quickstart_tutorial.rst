@@ -46,21 +46,21 @@ individual beanbags.
 .. testcode:: pq_based
 
   tp1 = TimePoint(1.0, "ms")
-  tp1.save() # assigns a locale DB-Key `l_key`
+  tp1.save() # assigns a locale DB-Key `key`
   tp2 = TimePoint(2.0, "ms")
-  tp2.save() # assigns a locale DB-Key `l_key`
+  tp2.save() # assigns a locale DB-Key `key`
 
 .. testoutput:: pq_based
 
-  Assigned attribute `l_key`
-  Assigned attribute `l_key`
+  Assigned attribute `key`
+  Assigned attribute `key`
 
-You need the ``l_key`` to ``.load`` a stored object again:
+You need the ``key`` to ``.load`` a stored object again:
 
 .. testcode:: pq_based
 
-  l_key = tp1.l_key
-  tp3 = TimePoint.load(l_key)
+  key = tp1.key
+  tp3 = TimePoint.load(key)
   print tp3
 
 .. testoutput:: pq_based

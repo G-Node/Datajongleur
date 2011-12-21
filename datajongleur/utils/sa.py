@@ -82,41 +82,46 @@ class NumpyTypePGSpecific (sa.types.TypeDecorator):
 def getSession():
   return DBSession()
 
-def passLKeyDTO(cls):
-  def getLKey(self):
+def passKeyDTO(cls):
+  def getKey(self):
     try:
       dto = self.getDTO()
       if has_identity(dto):
-        return self.getDTO().getLKey()
+        return self.getDTO().getKey()
       return
     except Exception, e:
       print Exception
       print e
-  cls.getLKey = getLKey
-  cls.l_key = property(cls.getLKey)
+  cls.getKey = getKey
+  cls.key = property(cls.getKey)
   return cls
 
-def addDBAccess(dto_cls, dto_l_key_attr_name):
+def addInfoQuantityDBAccess():
+  """
+  This decorator adds the following methods:
+  * ``load(PK)``
+  * ``save()``
+  """
   def decorateClass(cls):
     @classmethod
-    def newBySession(cls, l_key):
+    def newBySession(cls, key):
       if not hasattr(cls, "_session"):
         cls.session = getSession()
-      dto = cls.session.query(dto_cls).filter(
-          getattr(dto_cls, dto_l_key_attr_name) == l_key).first()
+      dto = cls.session.query(cls._DTO).filter(
+          getattr(cls._DTO, 'key') == key).first()
       return cls.newByDTO(dto)
     @classmethod
-    def load(cls, l_key):
-      return cls.newBySession(l_key)
+    def load(cls, key):
+      return cls.newBySession(key)
     def save(self):
       if not hasattr(self, "session"):
         self.__class__.session = getSession()
       dto = self.getDTO()
-      l_key = self.getLKey()
+      key = self.getKey()
       self.session.add (dto)
       self.session.commit ()
-      if l_key is not self.l_key:
-        print "Assigned attribute `l_key`"
+      if key is not self.key:
+        print "Assigned attribute `key`"
       
     cls.newBySession = newBySession
     cls.load = load

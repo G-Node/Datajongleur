@@ -4,20 +4,18 @@ import sqlalchemy.orm as orm
 from datajongleur import Base, DBSession
 import uuid
 from datajongleur.utils.sa import NumpyType, GUID
-from datajongleur.utils.sa import passLKeyDTO, addDBAccess
+from datajongleur.utils.sa import passKeyDTO, addInfoQuantityDBAccess
 
 PREFIX = 'dj_neuro_'
 
 class DTOTimePoint(Base):
   __tablename__ =  PREFIX + 'time_points'
 
-  time_point_key =  sa.Column('time_point_key', sa.Integer, primary_key=True)
-  time_point_uuid = sa.Column('time_point_uuid', GUID, unique=True,
+  key =  sa.Column('key', sa.Integer, primary_key=True)
+  uuid = sa.Column('uuid', GUID, unique=True,
       default=uuid.uuid4)
   amount = sa.Column('amount', sa.Float)
   units = sa.Column('units', sa.String)
-
-  _dto_attributes = ['amount', 'units']
 
   def __init__(self, amount, units, **kwargs):
     self.amount = amount
@@ -40,9 +38,9 @@ class DTOTimePoint(Base):
     xml.display()
     return xml
 
-  def getLKey(self):
+  def getKey(self):
     try:
-      return self.time_point_key
+      return self.key
     except:
       print "No key available, yet!"
 
@@ -79,7 +77,7 @@ class DTOPeriod(Base):
   def checksum_json(self):
     return checksum_json(self)
 
-  def getLKey(self):
+  def getKey(self):
     try:
       return self.period_key
     except:
@@ -124,7 +122,7 @@ class DTOSampledTimeSeries(Base):
   def checksum_json(self):
     return checksum_json(self)
 
-  def getLKey(self):
+  def getKey(self):
     try:
       return self.sampled_time_series_key
     except Exception:
@@ -147,7 +145,7 @@ class DTOSpikeTimes(Base):
   def checksum_json(self):
     return checksum_json(self)
 
-  def getLKey(self):
+  def getKey(self):
     try:
       return self.spike_times_key
     except:
@@ -177,7 +175,7 @@ class DTORegularlySampledTimeSeries(Base):
   def checksum_json(self):
     return checksum_json(self)
 
-  def getLKey(self):
+  def getKey(self):
     try:
       return self.regularly_sampled_time_series_key
     except:
@@ -208,7 +206,7 @@ class DTOBinnedSpikes(Base):
   def checksum_json(self):
     return checksum_json(self)
 
-  def getLKey(self):
+  def getKey(self):
     try:
       return self.binned_spikes_key
     except:
