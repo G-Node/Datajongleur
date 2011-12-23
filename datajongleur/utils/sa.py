@@ -87,7 +87,7 @@ def passKeyDTO(cls):
     try:
       dto = self.getDTO()
       if has_identity(dto):
-        return self.getDTO().getKey()
+        return self.getDTO().key
       return
     except Exception, e:
       print Exception
@@ -121,7 +121,7 @@ def addInfoQuantityDBAccess():
       self.session.add (dto)
       self.session.commit ()
       if key is not self.key:
-        print "Assigned attribute `key`"
+        print "Assigned attribute ``key`` --> %r" % (self.key)
       
     cls.newBySession = newBySession
     cls.load = load

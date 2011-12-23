@@ -17,11 +17,12 @@ BaseNode = declarative_base(metadata=Base.metadata,
 class DTOQuantity(Base):
   __tablename__ = PREFIX + 'quantities'
 
-  quantity_key = sa.Column('quantity_key', sa.Integer, primary_key=True)
-  quantity_uuid = sa.Column('quantity_uuid', GUID, unique=True,
+  key = sa.Column('key', sa.Integer, primary_key=True)
+  uuid = sa.Column('uuid', GUID, unique=True,
       default=uuid.uuid4)
   amount = sa.Column('amount', NumpyType)
   units = sa.Column('units', sa.String)
+
 
 ##########
 # Addendum

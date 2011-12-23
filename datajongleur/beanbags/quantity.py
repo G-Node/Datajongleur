@@ -1,3 +1,4 @@
+import numpy as np
 import interfaces as i
 import quantities as pq
 from datajongleur.beanbags.models import DTOQuantity
@@ -18,7 +19,9 @@ class Quantity(pq.Quantity, i.Quantity):
       units,
       **kwargs
       ):
-    dto = cls._DTO(amount=amount, units=units, **kwargs)
+    #print "in __new__"
+    amount = np.array(amount)
+    dto = cls._DTO(amount=amount, units=units)
     return cls.newByDTO(dto)
 
   @classmethod
@@ -31,12 +34,19 @@ class Quantity(pq.Quantity, i.Quantity):
     obj._dto = dto
     return obj
 
+  def __array_finalize__(self, obj):
+    #print "in finalize"
+    pq.Quantity.__array_finalize__ (self, obj)
+    if hasattr(obj, '_dto'): # needed for ``copy``
+      self._dto = obj._dto
+
   def __array_wrap__(self, obj, context=None):
     """
     Returns a Quantity-object in case of arithmetic, e.g. ``a + b``
     """
+    #print "in wrap"
     obj1 = pq.Quantity.__array_wrap__ (self, obj, context)
-    obj2 = self.__class__(obj1.amount, obj1.units)
+    obj2 = Quantity(obj1.amount, obj1.units)
     return obj2
 
   def getDTO(self):
@@ -62,6 +72,9 @@ class Quantity(pq.Quantity, i.Quantity):
 
 
 class DTOInfoQuantity(i.DTOInfoQuantity):
+  """
+  Not in ``models.py`` as this is too general to map it to a database.
+  """
   def __init__(self, **kwargs):
     self._info_attributes = []
     for kw in kwargs:
@@ -92,6 +105,10 @@ class InfoQuantity(Quantity):
     obj._info_attributes = {}
     return obj
 
+  def __array_prepare__(self, obj, context=None):
+    res = Quantity.__array_prepare__ (self, obj, context)
+    return res
+
   def __array_finalize__(self, obj):
     Quantity.__array_finalize__ (self, obj)
     if hasattr(obj, '_dto'): # needed for ``copy``
@@ -107,14 +124,17 @@ class InfoQuantity(Quantity):
 
   def __repr_main__ (self):
     """ Representation of the inherited Quantity-part"""
-    return "%s\n(%s, %r)" % (self.__class__.__name__, self.amount, self.units)
+    return "%r\n" % self.view(Quantity)
+    return "(%s, %r)\n" % (
+        #self.__class__.__name__,
+        self.amount, self.units)
     
   def __repr_info__ (self):
     if len(self._info_attributes.keys()) == 0:
       return ""
     repr_info = "Info-Attributes:\n"
     for info_attribute in self._info_attributes.iteritems():
-      repr_info += "%s: %r\n" %(info_attribute[0], info_attribute[1])
+      repr_info += " %s: %r\n" %(info_attribute[0], info_attribute[1])
     return repr_info
   
   def __repr__(self):
