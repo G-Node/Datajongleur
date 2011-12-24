@@ -1,12 +1,28 @@
-from datajongleur.models import Base, declarative_base
+from datajongleur import Base, declarative_base
 import sqlalchemy as sa
 import sqlalchemy.orm as orm
 import sqlamp
+import uuid
+from datajongleur.utils.sa import NumpyType, GUID
 
-PREFX = "beanbag"
+PREFIX = "beanbag_"
 
 BaseNode = declarative_base(metadata=Base.metadata,
                             metaclass=sqlamp.DeclarativeMeta)
+
+##########
+# Quantity
+##########
+
+class DTOQuantity(Base):
+  __tablename__ = PREFIX + 'quantities'
+
+  key = sa.Column('key', sa.Integer, primary_key=True)
+  uuid = sa.Column('uuid', GUID, unique=True,
+      default=uuid.uuid4)
+  amount = sa.Column('amount', NumpyType)
+  units = sa.Column('units', sa.String)
+
 
 ##########
 # Addendum
@@ -16,8 +32,9 @@ addendum_badge_maps = sa.Table(
     PREFIX + 'addendum_badge_maps',
     Base.metadata,
     sa.Column(
-      'addendum_key', sa.Integer, sa.ForeignKey('addenda.addendum_key')),
-    sa.Column('badge_key', sa.ForeignKey('badges.badge_key')),
+      'addendum_key', sa.Integer, sa.ForeignKey(
+        PREFIX + 'addenda.addendum_key')),
+    sa.Column('badge_key', sa.ForeignKey(PREFIX + 'badges.badge_key')),
     )
 
 addendum_addendum_maps = sa.Table(
@@ -26,11 +43,11 @@ addendum_addendum_maps = sa.Table(
     sa.Column (
       'addendum_key',
       sa.Integer,
-      sa.ForeignKey ('addenda.addendum_key')),
+      sa.ForeignKey (PREFIX + 'addenda.addendum_key')),
     sa.Column (
       'addendum_ref_key',
       sa.Integer,
-      sa.ForeignKey ('addenda.addendum_key')),
+      sa.ForeignKey (PREFIX + 'addenda.addendum_key')),
     #sa.UniqueConstraint('addendum_key', 'addendum_ref_key')
     )
 
@@ -100,7 +117,7 @@ class ATreeNode(BaseNode):
   __tablename__ = PREFIX + 'a_tree_nodes'
   __table_args__ = (sa.ForeignKeyConstraint(
       ['name', 'addendum_key'],
-      ['addenda.name', 'addenda.addendum_key']),
+      [PREFIX + 'addenda.name', PREFIX + 'addenda.addendum_key']),
       {})
   __mp_manager__ = 'mp'
 
@@ -108,7 +125,7 @@ class ATreeNode(BaseNode):
   node_key = sa.Column(sa.Integer, primary_key=True)
   parent_node_key = sa.Column(
       sa.Integer,
-      sa.ForeignKey('a_tree_nodes.node_key'))
+      sa.ForeignKey(PREFIX + 'a_tree_nodes.node_key'))
   name = sa.Column(sa.String)#, sa.ForeignKey('addenda.name'))
   addendum_key = sa.Column(sa.Integer)
   # Properties

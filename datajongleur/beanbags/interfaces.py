@@ -80,6 +80,22 @@ class Quantity(Value):
     return self.cmp(self, other)
 
 
+class DTOInfoQuantity (Quantity):
+  def getDict (self):
+    raise NotImplementedError
+  def getJSON (self):
+    raise NotImplementedError
+  def getXML (self):
+    raise NotImplementedError
+  def getChecksum (self):
+    raise NotImplementedError
+  def getKey (self):
+    raise NotImplementedError
+  ###
+  amount = None
+  units = None
+
+
 class Interval(Value):
   def getStart(self):
     raise NotImplementedError
@@ -104,20 +120,3 @@ class RegularlySampledSignal(SampledSignal):
   def getStepSize(self):
     raise NotImplementedError
 
-class DTO(object):
-  def getJSON(self):
-    """
-    To facilitate data-exchange.
-    """
-    raise NotImplementedError
-  def getDict(self):
-    raise NotImplementedError
-  def getXML(self):
-    """
-    To facilitate data-exchange.
-    """
-    raise NotImplementedError
-  def getChecksum(self):
-    raise NotImplementedError
-  def getLKey(self):
-    raise NotImplementedError

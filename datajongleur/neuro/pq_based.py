@@ -1,111 +1,21 @@
 from sqlalchemy.orm import object_session
-from sqlalchemy.orm.util import has_identity
 import numpy as np
 import json
 import pdb
 
 import datajongleur.beanbags.interfaces as i
-from datajongleur.beanbags.quantity import QuantitiesAdapter as Quantity
+from datajongleur.beanbags.quantity import Quantity 
+from datajongleur.beanbags.quantity import InfoQuantity
 from datajongleur.neuro.models import *
 #from datajongleur import DBSession
 
-def getSession():
-  return DBSession()
-
-#######################
-## Decorators        ##
-
-def passLKeyDTO(cls):
-  def getLKey(self):
-    try:
-      dto = self.getDTO()
-      if has_identity(dto):
-        return self.getDTO().getLKey()
-      return
-    except Exception, e:
-      print Exception
-      print e
-  cls.getLKey = getLKey
-  cls.l_key = property(cls.getLKey)
-  return cls
-
-def addDBAccess(dto_cls, dto_l_key_attr_name):
-  def decorateClass(cls):
-    @classmethod
-    def newBySession(cls, l_key):
-      if not hasattr(cls, "_session"):
-        cls.session = getSession()
-      dto = cls.session.query(dto_cls).filter(
-          getattr(dto_cls, dto_l_key_attr_name) == l_key).first()
-      return cls.newByDTO(dto)
-    @classmethod
-    def load(cls, l_key):
-      return cls.newBySession(l_key)
-    def save(self):
-      if not hasattr(self, "session"):
-        self.__class__.session = getSession()
-      dto = self.getDTO()
-      l_key = self.getLKey()
-      self.session.add (dto)
-      self.session.commit ()
-      if l_key is not self.l_key:
-        print "Assigned attribute `l_key`"
-      
-    cls.newBySession = newBySession
-    cls.load = load
-    cls.save = save
-    return cls
-  return decorateClass
-
-## (end: Decorators) ##
-#######################
-
-@addDBAccess(DTOTimePoint, 'time_point_key')
-@passLKeyDTO
-class TimePoint(Quantity):
-  def __new__(cls, time, units):
-    print "1"
-    dto = DTOTimePoint(time, units)
-    print "2"
-    return cls.newByDTO(dto)
-
-  def __array_finalize__(self, obj):
-    super(TimePoint, self).__array_finalize__(obj)
-    print type(obj)
-    if not type(obj) == self.__class__.__base__:
-      """
-      This will be executed when
-
-      * ``self.copy()``
-      * arithmetics, e.g. `self + self`
-      """
-      print "new instance"
-      self._dto_time_point = DTOTimePoint(self.amount, self.units)
-
-  @classmethod
-  def newByDTO(cls, dto):
-    print "3"
-    obj = Quantity(
-        dto.time,
-        dto.units).view(cls)
-    obj._dto_time_point = dto
-    print "4"
-    return obj
-
-  def getDTO(self):
-    if not hasattr(self, '_dto_time_point'):
-      dto = DTOTimePoint(self.amount, self.units)
-      self._dto_time_point = dto
-    return self._dto_time_point
+@addInfoQuantityDBAccess()
+@passKeyDTO
+class TimePoint(InfoQuantity):
+  _DTO = DTOTimePoint
 
   def getTime(self):
     return self 
-
-  def __repr__(self):
-    return "%s(%s, %r)" %(
-        self.__class__.__name__,
-        self.getAmount(),
-        self.getUnits())
 
   def __hash__(self):
     # different from `getHashValue` as python-hashs should be integer for usage
@@ -115,38 +25,38 @@ class TimePoint(Quantity):
   def getHashValue(self):
     return sha1(self.__repr__()).hexdigest()
 
-
   # ------- Mapping Properties -----------
   time = property(
       getTime,
       i.Value.throwSetImmutableAttributeError)
 
 
-@addDBAccess(DTOPeriod, 'period_key')
-@passLKeyDTO
-class Period(i.Interval):
-  def __init__(self, start, stop, units):
-    dto = DTOPeriod(start, stop, units)
-    self._start_stop = Quantity(
-          [dto.start, dto.stop],
-          dto.units)
-    self._dto_period = dto
-    
+@addInfoQuantityDBAccess()
+@passKeyDTO
+class Period(InfoQuantity, i.Interval):
+  _DTO = DTOPeriod
+
   @classmethod
   def newByDTO(cls, dto):
-    return Period(dto.start, dto.stop, dto.units)
+    obj = Quantity(
+        [dto.start, dto.stop],
+        dto.units,
+        ).view(cls)
+    obj._dto = dto
+    obj._info_attributes = {}
+    return obj
 
-  def getDTO(self):
-    return self._dto_period
+  def __getitem__(self, key):
+    return Quantity.__getitem__(self.view(Quantity), key)
 
   def getStart(self):
-    return self._start_stop[0]
+    return self[0]
 
   def getStop(self):
-    return self._start_stop[1]
+    return self[1]
 
   def getLength(self):
-    return np.diff(self._start_stop)[0]
+    return np.diff(self)[0]
 
   def __hash__(self):
     # different from `getHashValue` as python-hashs should be integer for usage
@@ -161,35 +71,40 @@ class Period(i.Interval):
   stop:   %s
   length: %s    
   """ %(self.start, self.stop, self.length)
-  
-  def __repr__(self):
-    return '%s(%s, %s, %r)' %(
+  """  
+  def __repr_main__(self):
+    return '%s\n([%s, %s], %r)' %(
         self.__class__.__name__,
-        self.getStart().getAmount(),
-        self.getStop().getAmount(),
-        self.getStart().getUnits())
-
+        self.amount[0],
+        self.amount[1],
+        self.units)
+  """
   # ------- Mapping Properties -----------
   start = property(getStart)
   stop = property(getStop)
   length = property(getLength)
 
 
-@addDBAccess(DTOSampledTimeSeries, 'sampled_time_series_key')
-@passLKeyDTO
-class SampledTimeSeries(Quantity, i.SampledSignal, i.Interval):
+@addInfoQuantityDBAccess()
+@passKeyDTO
+class SampledTimeSeries(InfoQuantity, i.SampledSignal, i.Interval):
+  _DTO = DTOSampledTimeSeries
   def __new__(cls,
-      signal,
-      signal_units,
-      signal_base,
-      signal_base_units):
+      amount,
+      units,
+      signal_base_amount=None,
+      signal_base_units=None,
+      **kwargs # to catch e.g. ``dtype``, ``copy`` attributes
+      ):
+    if not (signal_base_amount and signal_base_units):
+      return Quantity(amount, units)
     #: Call the parent class constructor
-    assert len(signal) == len(signal_base),\
-        "len(signal) != len(signal_base)."
-    dto = DTOSampledTimeSeries(
-        signal,
-        signal_units,
-        signal_base,
+    assert len(amount) == len(signal_base_amount),\
+        "len(signal) != len(signal_base_amount)."
+    dto = cls._DTO(
+        amount,
+        units,
+        signal_base_amount,
         signal_base_units)
     obj = cls.newByDTO(dto)
     return obj
@@ -197,61 +112,50 @@ class SampledTimeSeries(Quantity, i.SampledSignal, i.Interval):
   @classmethod
   def newByDTO(cls, dto):
     obj = Quantity(
-        dto.signal,
-        dto.signal_units).view(cls)
-    obj._signal = obj.view(Quantity)
-    obj._signal_base = Quantity(
-        dto.signal_base,
+        dto.amount,
+        dto.units).view(cls)
+    obj._info_attributes = {}
+    obj._info_attributes['signal_base'] = Quantity(
+        dto.signal_base_amount,
         dto.signal_base_units)
-    obj._dto_sampled_time_series = dto
+    obj._dto = dto
     return obj
-
-  def getDTO(self):
-    return self._dto_sampled_time_series
 
   # ----- Implementing Interval ------
   def getStart(self):
-    return self._signal_base.min()
+    return self._info_attributes['signal_base'].min()
 
   def getStop(self):
-    return self._signal_base.max()
+    return self._info_attributes['signal_base'].max()
 
   def getLength(self):
     return self.stop - self.start
 
   # ----- Implementing SampledSignal  ------
-  def getSignal(self):
-    return self._signal
-
   def getSignalBase(self):
-    return self._signal_base
+    return self._info_attributes['signal_base']
 
   def getNSamplingPoints(self):
-    return Quantity(len(self.signal))
+    return Quantity(len(self), '')
 
   # ----- Implementing Value  ------
   def __str__(self):
     return """
-  signal:          %s,
+  amount:          %s,
+  units:           %s,
   signalbase:      %s,
   start:           %s,
   stop:            %s,
   length:          %s,
   n sample points: %s""" %(
-   self.signal,
+   self.amount,
+   self.units,
    self.signal_base,
    self.start,
    self.stop,
    self.length,
    self.n_sampling_points,
    )
-
-  def __repr__(self):
-    return '%s(%r, %r)' %(
-        self.__class__.__name__,
-        self.amount,
-        self.units,
-        )
 
   def getHashValue(self):
     return sha1(self.__repr__()).hexdigest()
@@ -260,9 +164,6 @@ class SampledTimeSeries(Quantity, i.SampledSignal, i.Interval):
     return hash(self.__repr__())
 
   # ------- Mapping Properties ----------
-  signal = property(
-      getSignal,
-      i.Value.throwSetImmutableAttributeError)
   signal_base = property(
       getSignalBase,
       i.Value.throwSetImmutableAttributeError)
@@ -280,89 +181,92 @@ class SampledTimeSeries(Quantity, i.SampledSignal, i.Interval):
       i.Value.throwSetImmutableAttributeError)
 
   
-@addDBAccess(DTOSpikeTimes, 'spike_times_key')
-@passLKeyDTO
+@addInfoQuantityDBAccess()
+@passKeyDTO
 class SpikeTimes(SampledTimeSeries):
   """
   ``SpikeTimes`` are a special case of ``SampledSignal`` with value 1 for
   ``signals`` and spike times as ``signal_base``, respectively.
   """
+  _DTO = DTOSpikeTimes
   def __new__(cls,
-      spike_times,
-      spike_times_units):
+      amount,
+      units,
+      **kwargs # to catch e.g. ``dtype``, ``copy`` attributes
+      ):
     #: Call the parent class constructor
-    dto = DTOSpikeTimes(
-        spike_times,
-        spike_times_units)
+    dto = cls._DTO(
+        amount,
+        units)
     obj = cls.newByDTO(dto)
-    obj._dto_spike_times = dto
     return obj
 
   @classmethod
   def newByDTO(cls, dto):
     obj = Quantity(
-        dto.spike_times,
-        dto.spike_times_units).view(cls)
-    obj._signal = Quantity(np.ones(len(
-      dto.spike_times)), dtype=bool)
-    obj._signal_base = Quantity(
-        dto.spike_times, 
-        dto.spike_times_units)
-    obj._dto_sampled_time_series = dto
+        dto.amount,
+        dto.units).view(cls)
+    obj._info_attributes = {}
+    obj._info_attributes['signal'] = Quantity(np.ones(len(
+      dto.amount), dtype=bool), '')#, dtype=bool)
+    obj._info_attributes['signal_base'] = Quantity(
+        dto.amount, 
+        dto.units)
+    obj._dto = dto
     return obj
 
-  def getDTO(self):
-    return self._dto_sampled_time_series
-
+  def getSignal(self):
+    return self._info_attributes['signal']
+  signal = property(
+      getSignal,
+      i.Value.throwSetImmutableAttributeError)
   
-@addDBAccess(DTORegularlySampledTimeSeries,
-    'regularly_sampled_time_series_key')
-@passLKeyDTO
+@addInfoQuantityDBAccess()
+@passKeyDTO
 class RegularlySampledTimeSeries(SampledTimeSeries, i.RegularlySampledSignal):
+  _DTO = DTORegularlySampledTimeSeries
   def __new__(cls,
-      sampled_signal,
-      sampled_signal_units,
+      amount,
+      units,
       start,
       stop,
-      time_units):
+      time_units,
+      **kwargs # to catch e.g. ``dtype``, ``copy`` attributes
+      ):
     #: Call the parent class constructor
     dto = DTORegularlySampledTimeSeries(
-        sampled_signal,
-        sampled_signal_units,
+        amount,
+        units,
         start,
         stop,
         time_units)
     obj = cls.newByDTO(dto)
-    obj._dto_regularly_sampled_time_series = dto
     return obj
 
   @classmethod
   def newByDTO(cls, dto):
     obj = Quantity(
-        dto.sampled_signal,
-        dto.sampled_signal_units).view(cls)
-    obj._signal = obj.view(Quantity)
-    obj._start = Quantity(
+        dto.amount,
+        dto.units).view(cls)
+    obj._info_attributes = {}
+    obj._info_attributes['start'] = Quantity(
         dto.start,
         dto.time_units)
-    obj._stop = Quantity(
+    obj._info_attributes['stop'] = Quantity(
         dto.stop,
         dto.time_units)
-    obj._dto_regularly_sampled_time_series = dto
+    obj._dto = dto
     return obj
-
-  def getDTO(self):
-    return self._dto_regularly_sampled_time_series
 
   def getSelf(self):
     return self
 
   # ----- Implementation Period (diff. SampledTimeSeries)------
   def getStart(self):
-    return self._start
+    return self._info_attributes['start']
 
   def getStop(self):
-    return self._stop
+    return self._info_attributes['stop']
 
   def getSignalBase(self):
     return np.linspace(self.start, self.stop, self.n_sample_points)
@@ -399,6 +303,7 @@ class RegularlySampledTimeSeries(SampledTimeSeries, i.RegularlySampledSignal):
            self.n_sample_points,
            )
 
+  """
   def __repr__(self):
     return '%r(%s, %r, %s, %s, %r)' %(
         self.__class__.__name__,
@@ -407,6 +312,7 @@ class RegularlySampledTimeSeries(SampledTimeSeries, i.RegularlySampledSignal):
         self.start.amount,
         self.stop.amount,
         self.stop.units)
+  """
 
   def getHashValue(self):
     return sha1(self.__repr__()).hexdigest()
@@ -435,43 +341,49 @@ class RegularlySampledTimeSeries(SampledTimeSeries, i.RegularlySampledSignal):
       i.Value.throwSetImmutableAttributeError)
 
 
-@addDBAccess(DTOBinnedSpikes, 'binned_spikes_key')
-@passLKeyDTO
+@addInfoQuantityDBAccess()
+@passKeyDTO
 class BinnedSpikes(RegularlySampledTimeSeries):
   """
-  ``BinnedSpikes`` are a special case of ``RegularlySamgledSignal`` with
+  ``BinnedSpikes`` are a special case of ``RegularlySampledSignal`` with
   integer values for ``signals`` and bin-times as ``signal_base``.
   """
-  def __new__(cls, sampled_signal, start, stop, time_units):
+  _DTO = DTOBinnedSpikes
+  def __new__(
+      cls,
+      amount,
+      start,
+      stop,
+      time_units,
+      **kwargs # to catch e.g. ``dtype``, ``copy`` attributes
+      ):
+    if not (start and stop and time_units):
+      return Quantity(amount, '')
     #: Call the parent class constructor
-    assert np.array(sampled_signal).dtype == 'int',\
+    assert np.array(amount).dtype == 'int',\
         "sample signal has to be of type 'int'"
     dto = DTOBinnedSpikes(
-        sampled_signal,
+        amount,
         start,
         stop,
         time_units)
     obj = cls.newByDTO(dto)
-    obj._dto_binned_spikes = dto    
     return obj
   
   @classmethod
   def newByDTO(cls, dto):
     obj = Quantity(
-        dto.sampled_signal).view(cls)
-    obj._signal = obj.view(Quantity)
-    obj._start = Quantity(
+        dto.amount, '').view(cls)
+    obj._info_attributes = {}
+    obj._info_attributes['start'] = Quantity(
         dto.start,
         dto.time_units)
-    obj._stop = Quantity(
+    obj._info_attributes['stop'] = Quantity(
         dto.stop,
         dto.time_units)
-    obj._dto_binned_spikes = dto
+    obj._dto = dto
     return obj
-
-  def getDTO(self):
-    return self._dto_binned_spikes
-
+  """
   def __repr__(self):
     return '%s(%r, %r, %r, %r)' %(
         self.__class__.__name__,
@@ -479,6 +391,7 @@ class BinnedSpikes(RegularlySampledTimeSeries):
         self.start.amount,
         self.stop.amount,
         self.stop.units)
+  """
 
 if __name__ == '__main__':
   from datajongleur.utils.sa import get_test_session

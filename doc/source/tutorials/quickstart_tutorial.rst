@@ -46,21 +46,21 @@ individual beanbags.
 .. testcode:: pq_based
 
   tp1 = TimePoint(1.0, "ms")
-  tp1.save() # assigns a locale DB-Key `l_key`
+  tp1.save() # assigns a locale DB-Key `key`
   tp2 = TimePoint(2.0, "ms")
-  tp2.save()
-  l_key = tp1.l_key
+  tp2.save() # assigns a locale DB-Key `key`
 
 .. testoutput:: pq_based
 
-  Assigned attribute `l_key`
-  Assigned attribute `l_key`
+  Assigned attribute `key`
+  Assigned attribute `key`
 
-You need the ``l_key`` to load a stored object again:
+You need the ``key`` to ``.load`` a stored object again:
 
 .. testcode:: pq_based
 
-  tp3 = TimePoint.load(l_key)
+  key = tp1.key
+  tp3 = TimePoint.load(key)
   print tp3
 
 .. testoutput:: pq_based
@@ -77,7 +77,7 @@ object reference but the content of the object:
 
 .. testoutput:: pq_based
 
-  TimePoint(2.0, 'ms')
+  Quantity(2.0, 'ms')
   True
 
 Implements ``Quantity`` and inherits from ``QuantitiesAdapter``. Therefore you
@@ -104,16 +104,18 @@ Implements ``Interval``.
 
 .. testcode:: pq_based
 
-  p = Period(1,2,"s")
-  print p.length # see interface Interval
-  print p.start
-  print p.stop
+  p = Period([2,5],"s")
+  print repr (p.start)
+  print repr (p.stop)
+  print repr (p.length)
+  print repr (p[0])
 
 .. testoutput:: pq_based
 
-  1 s
-  1 s
-  2 s
+  Quantity(2, 's')
+  Quantity(5, 's')
+  Quantity(3, 's')
+  Quantity(2, 's')
 
 ``SampledTimeSeries``
 ---------------------
