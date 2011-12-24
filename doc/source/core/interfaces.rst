@@ -41,7 +41,7 @@ Source Code
 
 ``datajongleur/core/interfaces.py``:
 
-.. literalinclude:: /../../datajongleur/core/interfaces.py
+.. literalinclude:: /../../datajongleur/beanbags/interfaces.py
 
 Links
 =====
