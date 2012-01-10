@@ -1,19 +1,22 @@
+import json
 import sqlalchemy as sa
 import numpy as np
 import sqlalchemy.orm as orm
 from datajongleur import Base, DBSession
 import uuid
 from datajongleur.utils.sa import NumpyType, GUID
-from datajongleur.utils.sa import passKeyDTO, addInfoQuantityDBAccess
+from datajongleur.utils.sa import passAttrDTO, addInfoQuantityDBAccess
+from datajongleur.beanbags.models import DTOIdentity
+from datajongleur.beanbags.models import PREFIX as BB_PREFIX
 
 PREFIX = 'dj_neuro_'
 
-class DTOTimePoint(Base):
+class DTOTimePoint(DTOIdentity):
   __tablename__ =  PREFIX + 'time_points'
-
-  key =  sa.Column('key', sa.Integer, primary_key=True)
-  uuid = sa.Column('uuid', GUID, unique=True,
-      default=uuid.uuid4)
+  __mapper_args__ = {'polymorphic_identity': 'TimePoint'}
+  key = sa.Column(
+      sa.ForeignKey(BB_PREFIX + 'identities.key'),
+      primary_key=True)
   amount = sa.Column('amount', sa.Float)
   units = sa.Column('units', sa.String)
 
@@ -45,12 +48,12 @@ class DTOTimePoint(Base):
         self.units)
 
 
-class DTOPeriod(Base):
+class DTOPeriod(DTOIdentity):
   __tablename__ = PREFIX + 'periods'
-  
-  key = sa.Column('key', sa.Integer, primary_key=True)
-  uuid = sa.Column('uuid', GUID, unique=True,
-      default=uuid.uuid4)
+  __mapper_args__ = {'polymorphic_identity': 'Period'}
+  key = sa.Column(
+      sa.ForeignKey(BB_PREFIX + 'identities.key'),
+      primary_key=True)
   start = sa.Column('start', sa.Float)
   stop = sa.Column('stop', sa.Float)
   units = sa.Column('units', sa.String)
@@ -82,14 +85,12 @@ class DTOPeriod(Base):
         self.units)
 
 
-class DTOSampledTimeSeries(Base):
+class DTOSampledTimeSeries(DTOIdentity):
   __tablename__ = PREFIX + 'sampled_time_series'
+  __mapper_args__ = {'polymorphic_identity': 'SampledTimeSeries'}
   key = sa.Column(
-      'key',
-      sa.Integer,
+      sa.ForeignKey(BB_PREFIX + 'identities.key'),
       primary_key=True)
-  uuid = sa.Column('uuid', GUID, unique=True,
-      default=uuid.uuid4)
   amount = sa.Column('amount', NumpyType)
   units = sa.Column('units', sa.String)
   signal_base_amount = sa.Column('signal_base_amount', NumpyType)
@@ -116,11 +117,12 @@ class DTOSampledTimeSeries(Base):
     return checksum_json(self)
 
 
-class DTOSpikeTimes(Base):
+class DTOSpikeTimes(DTOIdentity):
   __tablename__ = PREFIX + 'spike_times'
-  key = sa.Column('key', sa.Integer, primary_key=True)
-  uuid = sa.Column('uuid', GUID, unique=True,
-      default=uuid.uuid4)
+  __mapper_args__ = {'polymorphic_identity': 'SpikeTimes'}
+  key = sa.Column(
+      sa.ForeignKey(BB_PREFIX + 'identities.key'),
+      primary_key=True)
   amount = sa.Column('amount', NumpyType)
   units = sa.Column('units', sa.String)
 
@@ -134,15 +136,12 @@ class DTOSpikeTimes(Base):
     return checksum_json(self)
 
 
-class DTORegularlySampledTimeSeries(Base):
+class DTORegularlySampledTimeSeries(DTOIdentity):
   __tablename__ = PREFIX + 'regularly_sampled_time_series'
-
+  __mapper_args__ = {'polymorphic_identity': 'RegularlySampledTimeSeries'}
   key = sa.Column(
-      'key',
-      sa.Integer,
+      sa.ForeignKey(BB_PREFIX + 'identities.key'),
       primary_key=True)
-  uuid = sa.Column('uuid', GUID, unique=True,
-      default=uuid.uuid4)
   amount = sa.Column('amount', NumpyType)
   units = sa.Column('units', sa.String)
   start = sa.Column('start', sa.Float)
@@ -160,18 +159,16 @@ class DTORegularlySampledTimeSeries(Base):
     return checksum_json(self)
 
 
-class DTOBinnedSpikes(Base):
+class DTOBinnedSpikes(DTOIdentity):
   """
   ``BinnedSpikes`` are a special case of ``RegularlySamgledSignal`` with
   integer values for ``signals`` and bin-times as ``signal_base``.
   """
   __tablename__ = PREFIX + 'binned_spikes'
+  __mapper_args__ = {'polymorphic_identity': 'BinnedSpikes'}
   key = sa.Column(
-      'key',
-      sa.Integer,
+      sa.ForeignKey(BB_PREFIX + 'identities.key'),
       primary_key=True)
-  uuid = sa.Column('uuid', GUID, unique=True,
-      default=uuid.uuid4)
   amount = sa.Column('amount', NumpyType)
   start = sa.Column('start', sa.Float)
   stop = sa.Column('stop', sa.Float)

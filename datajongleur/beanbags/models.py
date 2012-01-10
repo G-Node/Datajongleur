@@ -11,18 +11,56 @@ BaseNode = declarative_base(metadata=Base.metadata,
                             metaclass=sqlamp.DeclarativeMeta)
 
 ##########
-# Quantity
+# Identity
 ##########
 
-class DTOQuantity(Base):
-  __tablename__ = PREFIX + 'quantities'
-
-  key = sa.Column('key', sa.Integer, primary_key=True)
+class DTOIdentity(Base):
+  __tablename__ = PREFIX + 'identities'
+  key = sa.Column('key', sa.Integer, primary_key=True, autoincrement=True)
   uuid = sa.Column('uuid', GUID, unique=True,
       default=uuid.uuid4)
+  dto_type = sa.Column(sa.String, nullable=False)
+  __mapper_args__ = {'polymorphic_on': dto_type}
+
+##########
+# Beanbags
+##########
+
+class DTOQuantity(DTOIdentity):
+  __tablename__ = PREFIX + 'quantities'
+  __mapper_args__ = {'polymorphic_identity': 'Quantity'}
+  key = sa.Column(
+      sa.ForeignKey(PREFIX + 'identities.key'),
+      primary_key=True)
   amount = sa.Column('amount', NumpyType)
   units = sa.Column('units', sa.String)
 
+class DTOIDPoint(DTOIdentity):
+  __tablename__ = PREFIX + 'id_point'
+  __mapper_args__ = {'polymorphic_identity': 'IDPoint'}
+  key = sa.Column(
+      sa.ForeignKey(PREFIX + 'identities.key'),
+      primary_key=True)
+  amount = sa.Column('amount', NumpyType)
+  units = sa.Column('units', sa.String)
+
+class DTOIIDPoint(DTOIdentity):
+  __tablename__ = PREFIX + 'iid_point'
+  key = sa.Column(
+      sa.ForeignKey(PREFIX + 'identities.key'),
+      primary_key=True)
+  amount = sa.Column('amount', NumpyType)
+  units = sa.Column('units', sa.String)
+  __mapper_args__ = {'polymorphic_identity': 'IIDPoint'}
+
+class IIIDPoint(DTOIdentity):
+  __tablename__ = PREFIX + 'iiid_point'
+  key = sa.Column(
+      sa.ForeignKey(PREFIX + 'identities.key'),
+      primary_key=True)
+  amount = sa.Column('amount', NumpyType)
+  units = sa.Column('units', sa.String)
+  __mapper_args__ = {'polymorphic_identity': 'IIIDPoint'}
 
 ##########
 # Addendum

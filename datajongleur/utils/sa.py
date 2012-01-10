@@ -82,18 +82,22 @@ class NumpyTypePGSpecific (sa.types.TypeDecorator):
 def getSession():
   return DBSession()
 
-def passKeyDTO(cls):
-  def getKey(self):
-    try:
-      dto = self.getDTO()
-      if has_identity(dto):
-        return self.getDTO().key
-      return
-    except Exception, e:
-      print Exception
-      print e
-  cls.getKey = getKey
+def passAttrDTO(cls):
+  def genGetMyAttr(attr_name):
+    def getMyAttr(self):
+      try:
+        dto = self.getDTO()
+        if has_identity(dto):
+          return getattr(self.getDTO(), attr_name)
+        return
+      except Exception, e:
+        print Exception
+        print e
+    return getMyAttr
+  cls.getKey = genGetMyAttr('key')
   cls.key = property(cls.getKey)
+  cls.getUUID = genGetMyAttr('uuid')
+  cls.uuid = property(cls.getUUID)
   return cls
 
 def addInfoQuantityDBAccess():

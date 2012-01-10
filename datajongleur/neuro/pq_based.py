@@ -10,7 +10,7 @@ from datajongleur.neuro.models import *
 #from datajongleur import DBSession
 
 @addInfoQuantityDBAccess()
-@passKeyDTO
+@passAttrDTO
 class TimePoint(InfoQuantity):
   _DTO = DTOTimePoint
 
@@ -32,7 +32,7 @@ class TimePoint(InfoQuantity):
 
 
 @addInfoQuantityDBAccess()
-@passKeyDTO
+@passAttrDTO
 class Period(InfoQuantity, i.Interval):
   _DTO = DTOPeriod
 
@@ -86,7 +86,7 @@ class Period(InfoQuantity, i.Interval):
 
 
 @addInfoQuantityDBAccess()
-@passKeyDTO
+@passAttrDTO
 class SampledTimeSeries(InfoQuantity, i.SampledSignal, i.Interval):
   _DTO = DTOSampledTimeSeries
   def __new__(cls,
@@ -182,7 +182,7 @@ class SampledTimeSeries(InfoQuantity, i.SampledSignal, i.Interval):
 
   
 @addInfoQuantityDBAccess()
-@passKeyDTO
+@passAttrDTO
 class SpikeTimes(SampledTimeSeries):
   """
   ``SpikeTimes`` are a special case of ``SampledSignal`` with value 1 for
@@ -222,7 +222,7 @@ class SpikeTimes(SampledTimeSeries):
       i.Value.throwSetImmutableAttributeError)
   
 @addInfoQuantityDBAccess()
-@passKeyDTO
+@passAttrDTO
 class RegularlySampledTimeSeries(SampledTimeSeries, i.RegularlySampledSignal):
   _DTO = DTORegularlySampledTimeSeries
   def __new__(cls,
@@ -342,7 +342,7 @@ class RegularlySampledTimeSeries(SampledTimeSeries, i.RegularlySampledSignal):
 
 
 @addInfoQuantityDBAccess()
-@passKeyDTO
+@passAttrDTO
 class BinnedSpikes(RegularlySampledTimeSeries):
   """
   ``BinnedSpikes`` are a special case of ``RegularlySampledSignal`` with

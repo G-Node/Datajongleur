@@ -1,67 +1,42 @@
-from datajongleur.models import Base
-from datajongleur.neuro import 
-import sqlalchemy as sa
-import sqlalchemy.orm as orm
+from datajongleur.neuro.models import *
 
 PREFIX = 'neo_'
 
-class Block(object):
+class DTOBlock(object):
   __tablename__ = PREFIX + 'blocks'
   
-  block_key = sa.Column('block_key', sa.Integer, primary_key=True)
+  key =  sa.Column('key', sa.Integer, primary_key=True)
+  uuid = sa.Column('uuid', GUID, unique=True,
+      default=uuid.uuid4)
   rec_datetime =  sa.Column('rec_datetime', sa.DateTime)
   file_datetime =  sa.Column('file_datetime', sa.DateTime)
+  index = sa.Column('index', sa.Integer)
 
 
-class Segment(object):
+class DTOSegment(object):
   __tablename__ = PREFIX + 'segments'
 
-  segment_key = sa.Column('segment_key', sa.Integer, primary_key=True),
+  key =  sa.Column('key', sa.Integer, primary_key=True)
+  uuid = sa.Column('uuid', GUID, unique=True,
+      default=uuid.uuid4)
   block_key =  sa.Column(
       'block_key',
       sa.Integer,
-      sa.ForeignKey(PREFIX + 'blocks.block_key'),
-      nullable=False),
-
-  def add_analog_signal(self, asig):
-    try:
-      self._dtos_analog_signal.append(asig._dto_analog_signal)
-      asig._dto_analog_signal._dto_regularly_sampled_time_series =\
-          asig._dto_regularly_sampled_time_series
-    except exc.SQLAlchemyError, e:
-      print "Problem: %s" % e[0]
-
-  def add_event(self, event):
-    try:
-      self._dtos_event.append(event._dto_event)
-      event._dto_event._dto_time_point =\
-          event._dto_time_point
-    except exc.SQLAlchemyError, e:
-      print "Problem: %s" % e[0]
-
-  def get_analog_signal(self, idx):
-    dto_asig = self._dtos_analog_signal[idx]
-    asig = AnalogSignal.newByDTO(dto_asig._dto_regularly_sampled_time_series)
-    asig._dto_analog_signal = dto_asig
-    return asig
-
-  def get_list_of_analog_signals(self):
-    list_of_anasigs = []
-    for idx, anasig in enumerate(self._dtos_analog_signal):
-      list_of_anasigs.append(self.get_analog_signal(idx))
-    return list_of_anasigs
-
-  def info(self):
-    print self._dtos_analog_signal
+      sa.ForeignKey(PREFIX + 'blocks.key'),
+      #nullable=False) #PR: check!
+      )
+  rec_datetime =  sa.Column('rec_datetime', sa.DateTime)
+  file_datetime =  sa.Column('file_datetime', sa.DateTime)
+  index = sa.Column('index', sa.Integer)
 
 
-class RecordingChannelGroup(object):
+class DTORecordingChannelGroup(object):
   __tablename__ = PREFIX + 'recording_channel_groups'
   recording_channel_group_key = sa.Column(
       'recording_channel_group_key', sa.Integer, primary_key=True),
 
 
-class RecordingChannel(object):
+class DTORecordingChannel(object):
   __tablename__ = PREFIX + 'recording_channels'
   recording_channel_key =  sa.Column(
       'recording_channel_key', sa.Integer, primary_key=True)
@@ -74,7 +49,7 @@ class RecordingChannel(object):
   index = sa.Column('index', sa.Integer)
 
 
-class AnalogSignalDTO(object):
+class DTOAnalogSignal(object):
   __tablename__ = PREFIX + 'analog_signal_dtos'
   __table_args__ = (
 
@@ -99,7 +74,7 @@ class AnalogSignalDTO(object):
       'regularly_sampled_time_series_key', sa.BigInteger,
       nullable=False),
 
-
+"""
 @addAddendumAccess("_dto_analog_signal")
 class AnalogSignal(djcls.RegularlySampledTimeSeries):
   def __init__(self, *args, **kwargs):
@@ -132,9 +107,9 @@ class AnalogSignal(djcls.RegularlySampledTimeSeries):
 
   favorite = property(getFavorite, setFavorite)
   description = property(getDescription, setDescription)
+"""
 
-
-class EventDTO(object):
+class DTOEvent(object):
       sa.Column('event_key', sa.Integer, primary_key=True),
       sa.Column('segment_key', sa.Integer, nullable=False),
       # required attributes (neo 0.2)
@@ -155,19 +130,3 @@ class EventDTO(object):
       sa.ForeignKeyConstraint(
         ['segment_key'],
         [schemaname + "." + PREFIX + 'segments.segment_key']),
-
-class Event(djcls.TimePoint):
-  def __init__(self, *args, **kwargs):
-    # real initialization takes place at
-    # ``djcls.TimePoint.__newByDTO__(...)``
-    # => initial usage equivalent to ``djcls.TimePoint``
-    #
-    # initialize default-attributes for structural inforamtion of
-    # ``Event``
-    self._dto_event = EventDTO()
-
-  def getSegment(self):
-    return self._dto_event._segment
-
-  segment = property(getSegment)
-

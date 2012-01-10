@@ -2,14 +2,14 @@ import numpy as np
 import interfaces as i
 import quantities as pq
 from datajongleur.beanbags.models import DTOQuantity
-from datajongleur.utils.sa import passKeyDTO, addInfoQuantityDBAccess
+from datajongleur.utils.sa import passAttrDTO, addInfoQuantityDBAccess
 
 ###################
 # Quantity
 ###################
 
 @addInfoQuantityDBAccess()
-@passKeyDTO
+@passAttrDTO
 class Quantity(pq.Quantity, i.Quantity):
   _DTO = DTOQuantity
 
