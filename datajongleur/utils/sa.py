@@ -4,30 +4,30 @@ import uuid
 
 import sqlalchemy as sa
 from sqlalchemy.orm.util import has_identity
+from sqlalchemy.ext.declarative import declared_attr
 
 from sqlalchemy.types import TypeDecorator, CHAR
-from sqlalchemy.dialects.postgresql import UUID
 import uuid
 
 from datajongleur import DBSession
 
-class GUID(TypeDecorator):
-    """Platform-independent GUID type.
+class UUID(TypeDecorator):
+    """Platform-independent UUID type.
     Uses Postgresql's UUID type, otherwise uses
     CHAR(32), storing as stringified hex values.
     """
     impl = CHAR
 
     def load_dialect_impl(self, dialect):
-        if dialect.name == 'postgresql':
-            return dialect.type_descriptor(UUID())
-        else:
-            return dialect.type_descriptor(CHAR(32))
+      if False: #dialect.name == 'postgresql':
+          return dialect.type_descriptor(UUID())
+      else:
+          return dialect.type_descriptor(CHAR(32))
 
     def process_bind_param(self, value, dialect):
         if value is None:
             return value
-        elif dialect.name == 'postgresql':
+        elif False: #dialect.name == 'postgresql':
             return str(value)
         else:
             if not isinstance(value, uuid.UUID):
@@ -41,6 +41,16 @@ class GUID(TypeDecorator):
             return value
         else:
             return uuid.UUID(value)
+ 
+
+class UUIDMixin(object):
+  @declared_attr
+  def __tablename__(cls):
+      return cls.__name__.lower()
+  uuid = sa.Column('uuid', UUID, unique=True,
+      default=uuid.uuid4,
+      primary_key=True)
+
 
 class NumpyType (sa.types.TypeDecorator):
   impl = sa.types.LargeBinary
@@ -59,7 +69,7 @@ class NumpyTypePGSpecific (sa.types.TypeDecorator):
   impl = sa.types.LargeBinary
 
   def load_dialect_impl(self, dialect):
-    if dialect.name == 'postgresql':
+    if False: #dialect.name == 'postgresql':
       return dialect.type_descriptor(ARRAY(sa.Float))
     else:
       return dialect.type_descriptor(sa.types.LargeBinary)
@@ -94,8 +104,8 @@ def passAttrDTO(cls):
         print Exception
         print e
     return getMyAttr
-  cls.getKey = genGetMyAttr('key')
-  cls.key = property(cls.getKey)
+  #cls.getKey = genGetMyAttr('key')
+  #cls.key = property(cls.getKey)
   cls.getUUID = genGetMyAttr('uuid')
   cls.uuid = property(cls.getUUID)
   return cls

@@ -24,5 +24,13 @@ def LoadConfig(file, config={}):
       config[name + "." + string.lower(opt)] = string.strip(cp.get(sec, opt))
   return config
 
+def connectDB(filename='db_setup.ini'):
+  from sqlalchemy import engine_from_config
+  from datajongleur import initialize_sql
+  config = LoadConfig(filename)
+  engine = engine_from_config(config, 'sqlalchemy.')
+  initialize_sql(engine)
+  
+
 if __name__=="__main__":
   print LoadConfig("some.ini", _ConfigDefault)

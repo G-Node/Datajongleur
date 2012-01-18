@@ -1,10 +1,10 @@
-import json
 import sqlalchemy as sa
-import numpy as np
 import sqlalchemy.orm as orm
-from datajongleur import Base, DBSession
+import numpy as np
+import json
 import uuid
-from datajongleur.utils.sa import NumpyType, GUID
+from datajongleur import Base, DBSession
+from datajongleur.utils.sa import NumpyType, UUID
 from datajongleur.utils.sa import passAttrDTO, addInfoQuantityDBAccess
 from datajongleur.beanbags.models import DTOIdentity
 from datajongleur.beanbags.models import PREFIX as BB_PREFIX
@@ -14,8 +14,8 @@ PREFIX = 'dj_neuro_'
 class DTOTimePoint(DTOIdentity):
   __tablename__ =  PREFIX + 'time_points'
   __mapper_args__ = {'polymorphic_identity': 'TimePoint'}
-  key = sa.Column(
-      sa.ForeignKey(BB_PREFIX + 'identities.key'),
+  uuid = sa.Column(
+      sa.ForeignKey(BB_PREFIX + 'identities.uuid'),
       primary_key=True)
   amount = sa.Column('amount', sa.Float)
   units = sa.Column('units', sa.String)
@@ -51,8 +51,8 @@ class DTOTimePoint(DTOIdentity):
 class DTOPeriod(DTOIdentity):
   __tablename__ = PREFIX + 'periods'
   __mapper_args__ = {'polymorphic_identity': 'Period'}
-  key = sa.Column(
-      sa.ForeignKey(BB_PREFIX + 'identities.key'),
+  uuid = sa.Column(
+      sa.ForeignKey(BB_PREFIX + 'identities.uuid'),
       primary_key=True)
   start = sa.Column('start', sa.Float)
   stop = sa.Column('stop', sa.Float)
@@ -88,8 +88,8 @@ class DTOPeriod(DTOIdentity):
 class DTOSampledTimeSeries(DTOIdentity):
   __tablename__ = PREFIX + 'sampled_time_series'
   __mapper_args__ = {'polymorphic_identity': 'SampledTimeSeries'}
-  key = sa.Column(
-      sa.ForeignKey(BB_PREFIX + 'identities.key'),
+  uuid = sa.Column(
+      sa.ForeignKey(BB_PREFIX + 'identities.uuid'),
       primary_key=True)
   amount = sa.Column('amount', NumpyType)
   units = sa.Column('units', sa.String)
@@ -120,8 +120,8 @@ class DTOSampledTimeSeries(DTOIdentity):
 class DTOSpikeTimes(DTOIdentity):
   __tablename__ = PREFIX + 'spike_times'
   __mapper_args__ = {'polymorphic_identity': 'SpikeTimes'}
-  key = sa.Column(
-      sa.ForeignKey(BB_PREFIX + 'identities.key'),
+  uuid = sa.Column(
+      sa.ForeignKey(BB_PREFIX + 'identities.uuid'),
       primary_key=True)
   amount = sa.Column('amount', NumpyType)
   units = sa.Column('units', sa.String)
@@ -139,8 +139,8 @@ class DTOSpikeTimes(DTOIdentity):
 class DTORegularlySampledTimeSeries(DTOIdentity):
   __tablename__ = PREFIX + 'regularly_sampled_time_series'
   __mapper_args__ = {'polymorphic_identity': 'RegularlySampledTimeSeries'}
-  key = sa.Column(
-      sa.ForeignKey(BB_PREFIX + 'identities.key'),
+  uuid = sa.Column(
+      sa.ForeignKey(BB_PREFIX + 'identities.uuid'),
       primary_key=True)
   amount = sa.Column('amount', NumpyType)
   units = sa.Column('units', sa.String)
@@ -164,10 +164,11 @@ class DTOBinnedSpikes(DTOIdentity):
   ``BinnedSpikes`` are a special case of ``RegularlySamgledSignal`` with
   integer values for ``signals`` and bin-times as ``signal_base``.
   """
+  print "test2"
   __tablename__ = PREFIX + 'binned_spikes'
   __mapper_args__ = {'polymorphic_identity': 'BinnedSpikes'}
-  key = sa.Column(
-      sa.ForeignKey(BB_PREFIX + 'identities.key'),
+  uuid = sa.Column(
+      sa.ForeignKey(BB_PREFIX + 'identities.uuid'),
       primary_key=True)
   amount = sa.Column('amount', NumpyType)
   start = sa.Column('start', sa.Float)
@@ -182,11 +183,6 @@ class DTOBinnedSpikes(DTOIdentity):
 
   def checksum_json(self):
     return checksum_json(self)
-
-def initialize_sql(engine):
-  DBSession.configure(bind=engine)
-  Base.metadata.bind = engine
-  Base.metadata.create_all(engine)
 
 if __name__ == "__main__":
   from datajongleur.utils.sa import get_test_session

@@ -1,26 +1,94 @@
-from datajongleur import Base, declarative_base
+import datetime as dt
 import sqlalchemy as sa
 import sqlalchemy.orm as orm
-import sqlamp
+from sqlalchemy.ext.associationproxy import association_proxy
+from sqlalchemy.ext.declarative import declared_attr
 import uuid
-from datajongleur.utils.sa import NumpyType, GUID
-
+from datajongleur import Base, DBSession
+from datajongleur import declarative_base
+from datajongleur.utils.sa import NumpyType, UUID, UUIDMixin
 PREFIX = "beanbag_"
-
-BaseNode = declarative_base(metadata=Base.metadata,
-                            metaclass=sqlamp.DeclarativeMeta)
+from datajongleur.addendum.models import Addendum, AddendumBadgeMap
 
 ##########
 # Identity
 ##########
 
-class DTOIdentity(Base):
+class DTOIdentity(UUIDMixin, Base):
   __tablename__ = PREFIX + 'identities'
-  key = sa.Column('key', sa.Integer, primary_key=True, autoincrement=True)
-  uuid = sa.Column('uuid', GUID, unique=True,
-      default=uuid.uuid4)
+  modification_time = sa.Column(
+      'modification_time', 
+      sa.DateTime,
+      default=dt.datetime.now())
   dto_type = sa.Column(sa.String, nullable=False)
   __mapper_args__ = {'polymorphic_on': dto_type}
+
+  # Property ``addendum_object`` is defined as backref within ``Addendum``
+  def add_badge(self, badge_dict={}, **kwargs):
+    if self.addendum_object is None:
+      self.addendum_object = Addendum()
+    badge_dict.update(kwargs)
+    self.addendum_object.badges = badge_dict
+
+  _name = association_proxy('addendum_object', 'name',
+      creator=lambda name: Addendum(
+        name=name, description='', flag=False))
+  _description = association_proxy('addendum_object', 'description',
+      creator=lambda description: Addendum(
+        name='', description=description, flag=False))
+  _flag = association_proxy('addendum_object', 'flag',
+      creator=lambda flag: Addendum(
+        name='', description='', flag=flag))
+
+  @property
+  def badges(self):
+    try:
+      print "in try-block"
+      return self.addendum_object.badges
+    except AttributeError:
+      "In case that there is no ``Addendum`` specified, yet."
+      print "in except-block"
+      return None
+
+  @badges.setter
+  def badges(self, value):
+    self.add_badge(value)
+
+  @property
+  def name(self):
+    try:
+      return self._name
+    except AttributeError:
+      "In case that there is no ``Addendum`` specified, yet."
+      return ""
+
+  @name.setter
+  def name(self, value):
+    self._name = value
+
+  @property
+  def description(self):
+    try:
+      return self._description
+    except AttributeError:
+      "In case that there is no ``Addendum`` specified, yet."
+      return ""
+
+  @description.setter
+  def description(self, value):
+    self._description = value
+
+  @property
+  def flag(self):
+    try:
+      return self._flag
+    except AttributeError:
+      "In case that there is no ``Addendum`` specified, yet."
+      return ""
+
+  @flag.setter
+  def flag(self, value):
+    self._flag = value
 
 ##########
 # Beanbags
@@ -29,266 +97,39 @@ class DTOIdentity(Base):
 class DTOQuantity(DTOIdentity):
   __tablename__ = PREFIX + 'quantities'
   __mapper_args__ = {'polymorphic_identity': 'Quantity'}
-  key = sa.Column(
-      sa.ForeignKey(PREFIX + 'identities.key'),
+  uuid = sa.Column(
+      sa.ForeignKey(PREFIX + 'identities.uuid'),
       primary_key=True)
   amount = sa.Column('amount', NumpyType)
   units = sa.Column('units', sa.String)
 
 class DTOIDPoint(DTOIdentity):
-  __tablename__ = PREFIX + 'id_point'
+  __tablename__ = PREFIX + 'id_points'
   __mapper_args__ = {'polymorphic_identity': 'IDPoint'}
-  key = sa.Column(
-      sa.ForeignKey(PREFIX + 'identities.key'),
+  uuid = sa.Column(
+      sa.ForeignKey(PREFIX + 'identities.uuid'),
       primary_key=True)
-  amount = sa.Column('amount', NumpyType)
+  x = sa.Column('x', sa.Numeric)
   units = sa.Column('units', sa.String)
 
 class DTOIIDPoint(DTOIdentity):
-  __tablename__ = PREFIX + 'iid_point'
-  key = sa.Column(
-      sa.ForeignKey(PREFIX + 'identities.key'),
-      primary_key=True)
-  amount = sa.Column('amount', NumpyType)
-  units = sa.Column('units', sa.String)
+  __tablename__ = PREFIX + 'iid_points'
   __mapper_args__ = {'polymorphic_identity': 'IIDPoint'}
-
-class IIIDPoint(DTOIdentity):
-  __tablename__ = PREFIX + 'iiid_point'
-  key = sa.Column(
-      sa.ForeignKey(PREFIX + 'identities.key'),
+  uuid = sa.Column(
+      sa.ForeignKey(PREFIX + 'identities.uuid'),
       primary_key=True)
-  amount = sa.Column('amount', NumpyType)
+  x = sa.Column('x', sa.Numeric)
+  y = sa.Column('y', sa.Numeric)
   units = sa.Column('units', sa.String)
+
+class DTOIIIDPoint(DTOIdentity):
+  __tablename__ = PREFIX + 'iiid_points'
   __mapper_args__ = {'polymorphic_identity': 'IIIDPoint'}
+  uuid = sa.Column(
+      sa.ForeignKey(PREFIX + 'identities.uuid'),
+      primary_key=True)
+  x = sa.Column('x', sa.Numeric)
+  y = sa.Column('y', sa.Numeric)
+  z = sa.Column('z', sa.Numeric)
+  units = sa.Column('units', sa.String)
 
-##########
-# Addendum
-##########
-
-addendum_badge_maps = sa.Table(
-    PREFIX + 'addendum_badge_maps',
-    Base.metadata,
-    sa.Column(
-      'addendum_key', sa.Integer, sa.ForeignKey(
-        PREFIX + 'addenda.addendum_key')),
-    sa.Column('badge_key', sa.ForeignKey(PREFIX + 'badges.badge_key')),
-    )
-
-addendum_addendum_maps = sa.Table(
-    PREFIX + 'addendum_addendum_maps',
-    Base.metadata,
-    sa.Column (
-      'addendum_key',
-      sa.Integer,
-      sa.ForeignKey (PREFIX + 'addenda.addendum_key')),
-    sa.Column (
-      'addendum_ref_key',
-      sa.Integer,
-      sa.ForeignKey (PREFIX + 'addenda.addendum_key')),
-    #sa.UniqueConstraint('addendum_key', 'addendum_ref_key')
-    )
-
-
-class Addendum(Base):
-  __tablename__ = PREFIX + 'addenda'
-
-  addendum_key = sa.Column (sa.Integer, primary_key=True)
-  name = sa.Column (sa.String, nullable=False)
-  description = sa.Column (sa.String)
-  flag = sa.Column (
-      sa.Boolean,
-      nullable=False,
-      default=False) # PR: better on DB-Level
-
-  _list_of_addendees = []
-
-  references_to = orm.relationship(
-      'Addendum',
-      secondary=addendum_addendum_maps,
-      primaryjoin=addendum_key==addendum_addendum_maps.c.addendum_key,
-      secondaryjoin=addendum_key==addendum_addendum_maps.c.addendum_ref_key,
-      backref='referenced_from')
-
-  def getChildren(self):
-    return [a_tree_node.addendum for a_tree_node in self.a_tree_nodes.children]
-
-  children = property(getChildren)
-
-  @classmethod
-  def _append_list_of_addendees(cls, addendee_name):
-    cls._list_of_addendees.append(addendee_name)
-
-  @classmethod
-  def _get_list_of_addendees(cls):
-    return cls._list_of_addendees
-
-  def getAddendee(self):
-    addendees = []
-    for addendee in self._get_list_of_addendees():
-      if addendee is not None:
-        addendees.append(addendee)
-    assert len(addendees) < 2, "More than one addendees assigned."
-    if len(addendees) == 1:
-      return self.__getattribute__("_"+addendees[0])
-    else:
-      return None
-  def setAddendee(self, obj):
-    
-    self.__setattr__("_" + obj.__class__.__name__, obj)
-  addendee = property(getAddendee, setAddendee)
-
-  def addBadge(self, badge_type, value):
-    badge = Badge(badge_type=badge_type, value=value)
-    self.badges.append(badge)
-
-  def __repr__(self):
-    return """%s(name=%r, description=%r, favorite=%r)""" %(
-        self.__class__.__name__,
-        self.name,
-        self.description,
-        self.favorite
-        )
-
-
-class ATreeNode(BaseNode):
-  __tablename__ = PREFIX + 'a_tree_nodes'
-  __table_args__ = (sa.ForeignKeyConstraint(
-      ['name', 'addendum_key'],
-      [PREFIX + 'addenda.name', PREFIX + 'addenda.addendum_key']),
-      {})
-  __mp_manager__ = 'mp'
-
-  # Attributes
-  node_key = sa.Column(sa.Integer, primary_key=True)
-  parent_node_key = sa.Column(
-      sa.Integer,
-      sa.ForeignKey(PREFIX + 'a_tree_nodes.node_key'))
-  name = sa.Column(sa.String)#, sa.ForeignKey('addenda.name'))
-  addendum_key = sa.Column(sa.Integer)
-  # Properties
-  addendum = orm.relationship(
-      Addendum, backref="a_tree_nodes")
-  children = orm.relationship('ATreeNode',
-      cascade="all, delete",
-      backref=orm.backref("parent", remote_side='ATreeNode.node_key'),
-      )
-
-  def __init__(self, addendum, parent=None):
-    self.addendum = addendum
-    self.parent = parent
-
-  def append(self, addendum):
-    self.children.append(ATreeNode(addendum, parent=self))
-
-  def __repr__(self):
-    return "%s(name=%r, node_key=%r, parent_node_key=%r)" % (
-        self.__class__.__name__,
-        self.addendum,
-        self.node_key,
-        self.parent_node_key
-        )
-
-
-class Badge(Base):
-  __tablename__ = PREFIX + 'badges'
-  __table_args__ = (
-      sa.PrimaryKeyConstraint('badge_key'),
-      #sa.UniqueConstraint('badge_type', 'value'),
-      {}
-      )
-  badge_key = sa.Column (sa.Integer)
-  badge_type = sa.Column (sa.String)
-  value = sa.Column (sa.String)
-
-  addenda = orm.relationship (
-      'Addendum',
-      secondary=addendum_badge_maps,
-      backref='badges')
-
-  def __repr__(self):
-    return "%s(badge_type=%r, value=%r)" %(
-        self.__class__.__name__,
-        self.badge_type,
-        self.value)
-
-
-def glue_to_addendum(cls):
-  addendum_object_type_two_maps = get_glue_addenda_table(cls, 'glue_addenda_')
-  cls.metadata.create_all ()
-  cls.addendum = orm.relationship(
-      'Addendum',
-      secondary=addendum_object_type_two_maps,
-      backref=orm.backref(
-        '_' + cls.__name__,
-        uselist=False), # PR: Just for `getting`, not `setting`.
-      uselist=False)
-  Addendum._append_list_of_addendees(cls.__name__)
-
-def dump_atree(node, indent=0):
-  return "   " * indent + repr(node) + \
-              "\n" + \
-              "".join([
-                  dump_atree(c, indent +1) 
-                  for c in node.children])
-
-def addSpecificBadgeViaAddendum(badge_type, addendum_name='_addendum'):
-  def decorateClass(cls):
-    def getAddendum(self):
-      return self.__getattribute__(addendum_name)
-    def getBadgesOfType(self):
-      addendum = getAddendum(self)
-      badges = addendum.badges
-      badges_of_type = []
-      for badge in badges:
-        if badge.badge_type == badge_type:
-          badges_of_type.append(badge)
-      return badges_of_type
-
-    def getBadge(self):
-      addendum = getAddendum(self)
-      badges = addendum.badges
-      values = []
-      for badge in badges:
-        if badge.badge_type == badge_type:
-          values.append(badge.value)
-      if len(values) == 1: return values[0]
-      if len(values) == 0: return None
-      raise AttributeError, 'More than one %s assiged!' %(badge_type)
-    def setBadge(self, value):
-      badges_of_type = getBadgesOfType(self)
-      if len(badges_of_type) == 1:
-        badges_of_type[0].value = value
-        return
-      if len(badges_of_type) == 0:
-        addendum = getAddendum(self)
-        addendum.badges.append(Badge(badge_type=badge_type, value=value))
-        return
-      raise AttributeError, 'More than one %s assiged!' %(badge_type)
-    setattr(cls, badge_type, property(getBadge, setBadge))
-    return cls
-  return decorateClass
-
-def addAddendumAccess(dto_name):
-  def decorateClass(cls):
-    def getName(self):
-      try:
-        return self._addendum.name
-      except AttributeError, e:
-        return ""
-
-    def setName(self, value):
-      try:
-        self._addendum.name = value
-      except AttributeError, e:
-        if not dto_name:
-          self._addendum = Addendum(name=value, description='', favorite=False)
-        else:
-          dto = self.__dict__[dto_name]
-          dto._addendum = Addendum(name=value, description='', favorite=False)
-
-    cls.name = property(getName, setName)
-    cls.getName = getName
-    cls.setName = setName
-    return cls
-  return decorateClass
