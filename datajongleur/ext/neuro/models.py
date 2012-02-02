@@ -3,7 +3,7 @@ import sqlalchemy.orm as orm
 import numpy as np
 import json
 import uuid
-from datajongleur import Base, DBSession
+from datajongleur import Base
 from datajongleur.utils.sa import NumpyType, UUID
 from datajongleur.utils.sa import passAttrDTO, addInfoQuantityDBAccess
 from datajongleur.beanbags.models import DTOIdentity
@@ -182,6 +182,7 @@ class DTOBinnedSpikes(DTOIdentity):
 
   def checksum_json(self):
     return checksum_json(self)
+
 
 if __name__ == "__main__":
   from datajongleur.utils.sa import get_test_session

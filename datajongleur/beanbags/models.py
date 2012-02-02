@@ -5,7 +5,6 @@ from sqlalchemy.ext.associationproxy import association_proxy
 from sqlalchemy.ext.declarative import declared_attr
 import uuid
 from datajongleur import Base, DBSession
-from datajongleur import declarative_base
 from datajongleur.utils.sa import NumpyType, UUID, UUIDMixin
 PREFIX = "beanbag_"
 from datajongleur.addendum.models import Addendum, AddendumBadgeMap
@@ -43,11 +42,9 @@ class DTOIdentity(UUIDMixin, Base):
   @property
   def badges(self):
     try:
-      print "in try-block"
       return self.addendum_object.badges
     except AttributeError:
       "In case that there is no ``Addendum`` specified, yet."
-      print "in except-block"
       return None
 
   @badges.setter
@@ -133,3 +130,6 @@ class DTOIIIDPoint(DTOIdentity):
   z = sa.Column('z', sa.Numeric)
   units = sa.Column('units', sa.String)
 
+def initialize_sql(engine):
+  Base.metadata.bind = engine
+  Base.metadata.create_all(engine)

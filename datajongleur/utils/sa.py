@@ -9,7 +9,7 @@ from sqlalchemy.ext.declarative import declared_attr
 from sqlalchemy.types import TypeDecorator, CHAR
 import uuid
 
-from datajongleur import DBSession
+from datajongleur import Base, DBSession, cj
 
 class UUID(TypeDecorator):
     """Platform-independent UUID type.
@@ -146,9 +146,12 @@ def addInfoQuantityDBAccess():
 ## (end: Decorators) ##
 #######################
 
-def get_test_session(Base):
-  engine = sa.create_engine ('sqlite:///test.sqlite', echo=False)
-  Base.metadata.bind = engine
-  Base.metadata.create_all ()
-  session = DBSession ()
-  return session
+"""
+def connectDB(filename='db_setup.ini'):
+  from sqlalchemy import engine_from_config
+  from datajongleur import initialize_sql
+  config = LoadConfig(filename)
+  engine = engine_from_config(config, 'sqlalchemy.')
+  initialize_sql(engine)
+"""
+
