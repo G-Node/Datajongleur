@@ -48,8 +48,6 @@ class Addendum(UUIDMixin, Base):
     self.description = description
     self.flag = flag
 
-  _list_of_addendees = []
-
   identity_object = orm.relationship(
       "DTOIdentity",
       backref=orm.backref('addendum_object', uselist=False)

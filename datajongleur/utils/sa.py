@@ -118,24 +118,24 @@ def addInfoQuantityDBAccess():
   """
   def decorateClass(cls):
     @classmethod
-    def newBySession(cls, key):
-      if not hasattr(cls, "_session"):
+    def newBySession(cls, uuid):
+      if not hasattr(cls, "session"):
         cls.session = getSession()
       dto = cls.session.query(cls._DTO).filter(
-          getattr(cls._DTO, 'key') == key).first()
+          getattr(cls._DTO, 'uuid') == uuid).first()
       return cls.newByDTO(dto)
     @classmethod
-    def load(cls, key):
-      return cls.newBySession(key)
+    def load(cls, uuid):
+      return cls.newBySession(uuid)
     def save(self):
       if not hasattr(self, "session"):
         self.__class__.session = getSession()
       dto = self.getDTO()
-      key = self.getKey()
+      uuid = self.getUUID()
       self.session.add (dto)
       self.session.commit ()
-      if key is not self.key:
-        print "Assigned attribute ``key`` --> %r" % (self.key)
+      if uuid is not self.uuid:
+        print "Assigned attribute ``uuid`` --> %r" % (self.uuid)
       
     cls.newBySession = newBySession
     cls.load = load

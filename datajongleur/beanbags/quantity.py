@@ -102,6 +102,7 @@ class InfoQuantity(Quantity):
         dto.units,
         ).view(cls)
     obj._dto = dto
+    obj.setflags(write=False) # Immutable
     obj._info_attributes = {}
     return obj
 

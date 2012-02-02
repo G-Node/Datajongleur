@@ -164,7 +164,6 @@ class DTOBinnedSpikes(DTOIdentity):
   ``BinnedSpikes`` are a special case of ``RegularlySamgledSignal`` with
   integer values for ``signals`` and bin-times as ``signal_base``.
   """
-  print "test2"
   __tablename__ = PREFIX + 'binned_spikes'
   __mapper_args__ = {'polymorphic_identity': 'BinnedSpikes'}
   uuid = sa.Column(

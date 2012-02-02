@@ -6,7 +6,7 @@ import pdb
 import datajongleur.beanbags.interfaces as i
 from datajongleur.beanbags.quantity import Quantity 
 from datajongleur.beanbags.quantity import InfoQuantity
-from datajongleur.neuro.models import *
+from datajongleur.ext.neuro.models import *
 #from datajongleur import DBSession
 
 @addInfoQuantityDBAccess()

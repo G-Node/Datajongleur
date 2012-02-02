@@ -27,6 +27,9 @@ class DTOBlock(DTOIdentity):
   __mapper_args__ = {'polymorphic_identity': 'Block',
       'inherit_condition': (uuid==DTOIdentity.uuid)
       }
+  uuid = sa.Column(
+      sa.ForeignKey(BB_PREFIX + 'identities.uuid'),
+      primary_key=True)
   rec_datetime =  sa.Column('rec_datetime', sa.DateTime)
   file_datetime =  sa.Column('file_datetime', sa.DateTime)
   index = sa.Column('index', sa.Integer)
@@ -36,6 +39,9 @@ class DTOSegment(DTOIdentity):
   __mapper_args__ = {'polymorphic_identity': 'Segment',
       'inherit_condition': (uuid==DTOIdentity.uuid)
       }
+  uuid = sa.Column(
+      sa.ForeignKey(BB_PREFIX + 'identities.uuid'),
+      primary_key=True)
   block_uuid =  sa.Column(
       'block_uuid',
       sa.ForeignKey(PREFIX + 'blocks.uuid'),
@@ -58,6 +64,9 @@ class DTORecordingChannelGroup(DTOIdentity):
   __tablename__ = PREFIX + 'recording_channel_groups'
   __mapper_args__ = {'polymorphic_identity': 'RecordingChannelGroup',
       'inherit_condition': (uuid==DTOIdentity.uuid)}
+  uuid = sa.Column(
+      sa.ForeignKey(BB_PREFIX + 'identities.uuid'),
+      primary_key=True)
   block_uuid =  sa.Column(
       'block_uuid',
       sa.ForeignKey(PREFIX + 'blocks.uuid'),
@@ -73,12 +82,17 @@ class DTORecordingChannelGroup(DTOIdentity):
       uselist=False,
       backref='recording_channel_group_objects'
       )
+
+
 class DTORecordingChannel(DTOIdentity):
   __tablename__ = PREFIX + 'recording_channels'
   __mapper_args__ = {
       'polymorphic_identity': 'RecordingChannel',
       'inherit_condition': (uuid==DTOIdentity.uuid)
       }
+  uuid = sa.Column(
+      sa.ForeignKey(BB_PREFIX + 'identities.uuid'),
+      primary_key=True)
   index = sa.Column('index', sa.Integer)
   # Linking DTOIIDPoint
   iid_point_uuid = sa.Column(
@@ -104,6 +118,9 @@ class DTOAnalogSignal(DTOIdentity):
   __mapper_args__ = {'polymorphic_identity': 'AnalogSignal',
       'inherit_condition': (uuid==DTOIdentity.uuid)
       }
+  uuid = sa.Column(
+      sa.ForeignKey(BB_PREFIX + 'identities.uuid'),
+      primary_key=True)
   recording_channel_uuid = sa.Column(
       'recording_channel_uuid',
       sa.ForeignKey(PREFIX + 'recording_channels.uuid'),
@@ -135,6 +152,9 @@ class DTOIrregularlySampledSignal(DTOIdentity):
   __mapper_args__ = {'polymorphic_identity': 'IrregularlySampledSignal',
       'inherit_condition': (uuid==DTOIdentity.uuid)
       }
+  uuid = sa.Column(
+      sa.ForeignKey(BB_PREFIX + 'identities.uuid'),
+      primary_key=True)
   recording_channel_uuid = sa.Column(
       'recording_channel_uuid',
       sa.ForeignKey(PREFIX + 'recording_channels.uuid'),
@@ -166,6 +186,9 @@ class DTOEvent(DTOIdentity):
   __mapper_args__ = {'polymorphic_identity': 'Event',
       'inherit_condition': (uuid==DTOIdentity.uuid)
       }
+  uuid = sa.Column(
+      sa.ForeignKey(BB_PREFIX + 'identities.uuid'),
+      primary_key=True)
   segment_uuid = sa.Column('segment_uuid',
       sa.ForeignKey( PREFIX + 'segments.uuid'),
       sa.ForeignKey(BB_PREFIX + 'identities.uuid'),
@@ -192,6 +215,9 @@ class DTOEventArray(DTOIdentity):
   __mapper_args__ = {'polymorphic_identity': 'EventArray',
       'inherit_condition': (uuid==DTOIdentity.uuid)
       }
+  uuid = sa.Column(
+      sa.ForeignKey(BB_PREFIX + 'identities.uuid'),
+      primary_key=True)
   segment_uuid = sa.Column('segment_uuid',
       sa.ForeignKey( PREFIX + 'segments.uuid'),
       sa.ForeignKey(BB_PREFIX + 'identities.uuid'),
@@ -219,6 +245,9 @@ class DTOEpoch(DTOIdentity):
   __mapper_args__ = {'polymorphic_identity': 'Epoch',
       'inherit_condition': (uuid==DTOIdentity.uuid)
       }
+  uuid = sa.Column(
+      sa.ForeignKey(BB_PREFIX + 'identities.uuid'),
+      primary_key=True)
   segment_uuid = sa.Column('segment_uuid',
       sa.ForeignKey( PREFIX + 'segments.uuid'),
       sa.ForeignKey(BB_PREFIX + 'identities.uuid'),
@@ -247,6 +276,9 @@ class DTOUnit(DTOIdentity):
       'polymorphic_identity': 'Unit',
       'inherit_condition': (uuid==DTOIdentity.uuid)
       }
+  uuid = sa.Column(
+      sa.ForeignKey(BB_PREFIX + 'identities.uuid'),
+      primary_key=True)
   recording_channel_group_uuid =  sa.Column(
       'recording_channel_group_uuid',
       sa.ForeignKey(PREFIX + 'recording_channel_groups.uuid'),
@@ -267,6 +299,9 @@ class DTOSpikeTrain(DTOIdentity):
       'polymorphic_identity': 'SpikeTrain',
       'inherit_condition': (uuid==DTOIdentity.uuid)
       }
+  uuid = sa.Column(
+      sa.ForeignKey(BB_PREFIX + 'identities.uuid'),
+      primary_key=True)
   unit_uuid =  sa.Column(
       'unit_uuid',
       sa.ForeignKey(PREFIX + 'units.uuid'),
@@ -318,5 +353,57 @@ class DTOSpikeTrain(DTOIdentity):
       backref='spike_train_objects',
       uselist=False
       )
-"""
-"""
+
+  
+class DTOSpike(DTOIdentity):
+  __tablename__ = PREFIX + 'spikes'
+  __mapper_args__ = {
+      'polymorphic_identity': 'SpikeTrain',
+      'inherit_condition': (uuid==DTOIdentity.uuid)
+      }
+  uuid = sa.Column(
+      sa.ForeignKey(BB_PREFIX + 'identities.uuid'),
+      primary_key=True)
+  unit_uuid =  sa.Column(
+      'unit_uuid',
+      sa.ForeignKey(PREFIX + 'units.uuid'),
+      sa.ForeignKey(BB_PREFIX + 'identities.uuid'),
+      nullable=False)
+  # Datajongleur References
+  time_dto_id_point_uuid = sa.Column(
+      'time_dto_id_point_uuid',
+      sa.ForeignKey(BB_PREFIX + 'id_points.uuid'),
+      sa.ForeignKey(BB_PREFIX + 'identities.uuid'),
+      ) # -> ``SpikeTrain.times``
+  waveform_dto_sampled_time_series_uuid = sa.Column(
+      'waveform_dto_sampled_time_series_uuid',
+      sa.ForeignKey(NEURO_PREFIX + 'sampled_time_series.uuid'),
+      sa.ForeignKey(BB_PREFIX + 'identities.uuid'),
+      )
+  leftsweep_dto_quantities_uuid = sa.Column(
+      'leftsweep_dto_quantity_uuid',
+      sa.ForeignKey(BB_PREFIX + 'quantities.uuid'),
+      sa.ForeignKey(BB_PREFIX + 'identities.uuid'),
+      )
+
+  # Properties:
+  unit_object = orm.relationship(
+      "DTORecordingChannelGroup",
+      primaryjoin=(
+        unit_uuid==DTOUnit.uuid),
+      backref='spike_objects',
+      uselist=False
+      )
+  time_dto_id_point_object = orm.relationship(
+      "DTOSpikeTimes",
+      primaryjoin=(time_dto_id_point_uuid==DTOIDPoint.uuid)
+      )
+  waveform_dto_sampled_time_series_object = orm.relationship(
+      "DTOQuantity",
+      primaryjoin=(
+        waveform_dto_sampled_time_series_uuid==DTOSampledTimeSeries.uuid)
+      )
+  leftsweep_dto_quantity_object = orm.relationship(
+      "DTOQuantity",
+      primaryjoin=(leftsweep_dto_quantities_uuid==DTOQuantity.uuid)
+      )

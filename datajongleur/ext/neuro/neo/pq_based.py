@@ -1,3 +1,7 @@
+from datajongleur.ext.neuro.neo.models import *
+
+Block = DTOBlock
+Segment = DTOSegment
 class Segment(object):
 
   def add_analog_signal(self, asig):
