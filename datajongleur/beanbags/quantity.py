@@ -11,7 +11,7 @@ from datajongleur.utils.sa import passAttrDTO, addInfoQuantityDBAccess
 @addInfoQuantityDBAccess()
 @passAttrDTO
 class Quantity(pq.Quantity, i.Quantity):
-  _DTO = DTOQuantity
+  _BBDTO = DTOQuantity
 
   def __new__(
       cls,
@@ -21,7 +21,7 @@ class Quantity(pq.Quantity, i.Quantity):
       ):
     #print "in __new__"
     amount = np.array(amount)
-    dto = cls._DTO(amount=amount, units=units)
+    dto = cls._BBDTO(amount=amount, units=units)
     return cls.newByDTO(dto)
 
   @classmethod
@@ -51,10 +51,10 @@ class Quantity(pq.Quantity, i.Quantity):
 
   def getDTO(self):
     if not hasattr(self, '_dto'):
-      dto = self.__class__._DTO(self.amount, self.units)
+      dto = self.__class__._BBDTO(self.amount, self.units)
       self._dto = dto
     return self._dto
-  dto = property(getDTO)
+  "dto = property(getDTO)"
 
   def getAmount(self):
     return self.magnitude
@@ -88,11 +88,11 @@ class DTOInfoQuantity(i.DTOInfoQuantity):
 
 
 class InfoQuantity(Quantity):
-  _DTO = DTOInfoQuantity
+  _BBDTO = DTOInfoQuantity
   def __new__(cls, amount, units='', **kwargs):
     kwargs['amount'] = amount
     kwargs['units'] = units
-    dto = cls._DTO(**kwargs)
+    dto = cls._BBDTO(**kwargs)
     return cls.newByDTO(dto)
 
   @classmethod
@@ -139,7 +139,9 @@ class InfoQuantity(Quantity):
     return repr_info
   
   def __repr__(self):
-    return "%s\n%s" % (self.__repr_main__(), self.__repr_info__())
+    head = ">>> %s <<<\n" %(self.__class__.__name__)
+    repr_string = "%s\n%s" % (self.__repr_main__(), self.__repr_info__())
+    return head + repr_string
 
 
 if __name__ == '__main__':

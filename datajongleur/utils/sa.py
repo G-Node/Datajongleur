@@ -1,14 +1,12 @@
 import numpy as np
 import zlib
-import uuid
+import uuid as uuid_package # to avoid confusion with attribute `uuid`
 
 import sqlalchemy as sa
 from sqlalchemy.orm.util import has_identity
 from sqlalchemy.ext.declarative import declared_attr
 
 from sqlalchemy.types import TypeDecorator, CHAR
-import uuid
-
 from datajongleur import Base, DBSession, cj
 
 class UUID(TypeDecorator):
@@ -30,8 +28,8 @@ class UUID(TypeDecorator):
         elif False: #dialect.name == 'postgresql':
             return str(value)
         else:
-            if not isinstance(value, uuid.UUID):
-                return "%.32x" % uuid.UUID(value)
+            if not isinstance(value, uuid_package.UUID):
+                return "%.32x" % uuid_package.UUID(value)
             else:
                 # hexstring
                 return "%.32x" % value
@@ -40,7 +38,7 @@ class UUID(TypeDecorator):
         if value is None:
             return value
         else:
-            return uuid.UUID(value)
+            return uuid_package.UUID(value)
  
 
 class UUIDMixin(object):
@@ -48,7 +46,7 @@ class UUIDMixin(object):
   def __tablename__(cls):
       return cls.__name__.lower()
   uuid = sa.Column('uuid', UUID, unique=True,
-      default=uuid.uuid4,
+      default=uuid_package.uuid4,
       primary_key=True)
 
 
@@ -121,8 +119,8 @@ def addInfoQuantityDBAccess():
     def newBySession(cls, uuid):
       if not hasattr(cls, "session"):
         cls.session = getSession()
-      dto = cls.session.query(cls._DTO).filter(
-          getattr(cls._DTO, 'uuid') == uuid).first()
+      dto = cls.session.query(cls._BBDTO).filter(
+          getattr(cls._BBDTO, 'uuid') == uuid).first()
       return cls.newByDTO(dto)
     @classmethod
     def load(cls, uuid):

@@ -43,14 +43,16 @@ class Addendum(UUIDMixin, Base):
       unique=True
       )
 
-  def __init__(self, name='', description='', flag=False):
+  def __init__(self, name='', description='', flag=False, badges=None):
     self.name = name
     self.description = description
     self.flag = flag
+    if badges is not None:
+      self.badges = badges
 
-  identity_object = orm.relationship(
+  identity = orm.relationship(
       "DTOIdentity",
-      backref=orm.backref('addendum_object', uselist=False)
+      backref=orm.backref('addendum', uselist=False)
       )
 
   badges = association_proxy (
@@ -170,18 +172,18 @@ class AddendumBadgeMap(Base):
   badge_type = sa.Column (sa.String)
 
   # Properties
-  addendum_object = orm.relationship(Addendum, backref=orm.backref(
+  addendum = orm.relationship(Addendum, backref=orm.backref(
       'addendum_badge_maps',
       collection_class = attribute_mapped_collection("badge_type"),
       cascade="all, delete-orphan")
     )
 
-  badge_object = orm.relationship('Badge',
+  badge = orm.relationship('Badge',
       single_parent=True,
       #cascade="all, delete-orphan"
       )
 
-  badge_value = association_proxy ('badge_object', 'value')
+  badge_value = association_proxy ('badge', 'value')
 
 
 class Badge(UUIDMixin, Base):
@@ -198,11 +200,11 @@ class Badge(UUIDMixin, Base):
 
 
 def glue_to_addendum(cls):
-  addendum_object_type_two_maps = get_glue_addenda_table(cls, 'glue_addenda_')
+  addendum_type_two_maps = get_glue_addenda_table(cls, 'glue_addenda_')
   cls.metadata.create_all ()
   cls.addendum = orm.relationship(
       'Addendum',
-      secondary=addendum_object_type_two_maps,
+      secondary=addendum_type_two_maps,
       backref=orm.backref(
         '_' + cls.__name__,
         uselist=False), # PR: Just for `getting`, not `setting`.

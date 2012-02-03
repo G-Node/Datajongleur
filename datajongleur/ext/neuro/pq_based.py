@@ -12,7 +12,7 @@ from datajongleur.ext.neuro.models import *
 @addInfoQuantityDBAccess()
 @passAttrDTO
 class TimePoint(InfoQuantity):
-  _DTO = DTOTimePoint
+  _BBDTO = DTOTimePoint
 
   def getTime(self):
     return self 
@@ -34,7 +34,7 @@ class TimePoint(InfoQuantity):
 @addInfoQuantityDBAccess()
 @passAttrDTO
 class Period(InfoQuantity, i.Interval):
-  _DTO = DTOPeriod
+  _BBDTO = DTOPeriod
 
   @classmethod
   def newByDTO(cls, dto):
@@ -88,7 +88,7 @@ class Period(InfoQuantity, i.Interval):
 @addInfoQuantityDBAccess()
 @passAttrDTO
 class SampledTimeSeries(InfoQuantity, i.SampledSignal, i.Interval):
-  _DTO = DTOSampledTimeSeries
+  _BBDTO = DTOSampledTimeSeries
   def __new__(cls,
       amount,
       units,
@@ -101,7 +101,7 @@ class SampledTimeSeries(InfoQuantity, i.SampledSignal, i.Interval):
     #: Call the parent class constructor
     assert len(amount) == len(signal_base_amount),\
         "len(signal) != len(signal_base_amount)."
-    dto = cls._DTO(
+    dto = cls._BBDTO(
         amount,
         units,
         signal_base_amount,
@@ -188,14 +188,14 @@ class SpikeTimes(SampledTimeSeries):
   ``SpikeTimes`` are a special case of ``SampledSignal`` with value 1 for
   ``signals`` and spike times as ``signal_base``, respectively.
   """
-  _DTO = DTOSpikeTimes
+  _BBDTO = DTOSpikeTimes
   def __new__(cls,
       amount,
       units,
       **kwargs # to catch e.g. ``dtype``, ``copy`` attributes
       ):
     #: Call the parent class constructor
-    dto = cls._DTO(
+    dto = cls._BBDTO(
         amount,
         units)
     obj = cls.newByDTO(dto)
@@ -234,7 +234,7 @@ class RegularlySampledTimeSeries(SampledTimeSeries, i.RegularlySampledSignal):
       **kwargs # to catch e.g. ``dtype``, ``copy`` attributes
       ):
     #: Call the parent class constructor
-    dto = DTORegularlySampledTimeSeries(
+    dto = cls._DTO(
         amount,
         units,
         start,
@@ -279,40 +279,11 @@ class RegularlySampledTimeSeries(SampledTimeSeries, i.RegularlySampledSignal):
     return 1 / self.sampling_rate
 
   def getNSamplePoints(self):
-    return Quantity(len(self.signal))
+    return Quantity(len(self.amount), "")
 
   # ----- Implementing Value  ------
   def __str__(self):
     return str(self.__dict__)
-    return """
-        signal:          %s,
-        signalbase:      %s,
-        start:           %s,
-        stop:            %s,
-        length:          %s,
-        sampling rate:   %s,
-        step size:       %s,
-        n sample points: %s""" %(
-           self.signal,
-           self.signal_base,
-           self.start,
-           self.stop,
-           self.length,
-           self.sampling_rate,
-           self.step_size,
-           self.n_sample_points,
-           )
-
-  """
-  def __repr__(self):
-    return '%r(%s, %r, %s, %s, %r)' %(
-        self.__class__.__name__,
-        self.signal.amount,
-        self.signal.units,
-        self.start.amount,
-        self.stop.amount,
-        self.stop.units)
-  """
 
   def getHashValue(self):
     return sha1(self.__repr__()).hexdigest()
@@ -348,7 +319,7 @@ class BinnedSpikes(RegularlySampledTimeSeries):
   ``BinnedSpikes`` are a special case of ``RegularlySampledSignal`` with
   integer values for ``signals`` and bin-times as ``signal_base``.
   """
-  _DTO = DTOBinnedSpikes
+  _BBDTO = DTOBinnedSpikes
   def __new__(
       cls,
       amount,

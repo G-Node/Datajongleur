@@ -1,3 +1,40 @@
+def addProxyAttributes(attr_names, object_attr):
+  def deco(cls):
+    for attr_name in attr_names:
+      def getAttr(self, attr_name=attr_name):
+        obj = getattr(self, object_attr)
+        return getattr(obj, attr_name)
+      def setAttr(self, value, attr_name=attr_name):
+        obj = getattr(self, object_attr)
+        setattr(obj, attr_name, value)
+      prop = property(getAttr, setAttr)
+      setattr(cls, attr_name, prop)
+    return cls
+  return deco
+
+def addDictAccessByAttrs(key_names, dict_name):
+  def deco(cls):
+    for key_name in key_names:
+      def getAttr(self, key_name=key_name):
+        try:
+          return getattr(self, dict_name)[key_name]
+        except AttributeError, e:
+          return None
+        except KeyError, e:
+          return None
+        except TypeError, e:
+          return None
+      def setAttr(self, value, key_name=key_name):
+        if getattr(self, dict_name) is None:
+          setattr(self, dict_name, {key_name: value})
+        else:
+          getattr(self, dict_name)[key_name] = value
+      prop = property(getAttr, setAttr)
+      setattr(cls, key_name, prop)
+    return cls
+  return deco 
+
+
 class ListView(list):
   def __init__(self, raw_list, raw2new, new2raw):
     self._data = raw_list
@@ -9,7 +46,10 @@ class ListView(list):
     repr_str = "["
     for element in repr_list:
       repr_str += element.__repr__() + ",\n "
-    repr_str = repr_str[:-3] + "]"
+    if repr_str[-3:] == ",\n ":
+      repr_str = repr_str[:-3]
+    repr_str = repr_str + "]"
+    #repr_str = repr_str[:-3] + "]"
     return repr_str
 
   def append(self, item):

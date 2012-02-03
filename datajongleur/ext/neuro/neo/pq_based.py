@@ -1,69 +1,70 @@
 from datajongleur.ext.neuro.neo.models import *
+from datajongleur.ext.neuro.pq_based import *
+from datajongleur.utils.miscellaneous import *
 
-Block = DTOBlock
-Segment = DTOSegment
-class Segment(object):
+Block = addDictAccessByAttrs(['file_origin', 'brain_region'], 'badges')(Block)
+Segment = addDictAccessByAttrs(['file_origin'], 'badges')(Segment)
+RecordingChannel = addDictAccessByAttrs(
+    ['file_origin'], 'badges')(RecordingChannel)
+RecordingChannelGroup = addDictAccessByAttrs(
+    ['file_origin'],'badges')(RecordingChannelGroup)
+Unit = addDictAccessByAttrs(
+    ['file_origin'],'badges')(Unit)
 
-  def add_analog_signal(self, asig):
-    try:
-      self._dtos_analog_signal.append(asig._dto_analog_signal)
-      asig._dto_analog_signal._dto_regularly_sampled_time_series =\
-          asig._dto_regularly_sampled_time_series
-    except exc.SQLAlchemyError, e:
-      print "Problem: %s" % e[0]
-
-  def add_event(self, event):
-    try:
-      self._dtos_event.append(event._dto_event)
-      event._dto_event._dto_time_point =\
-          event._dto_time_point
-    except exc.SQLAlchemyError, e:
-      print "Problem: %s" % e[0]
-
-  def get_analog_signal(self, idx):
-    dto_asig = self._dtos_analog_signal[idx]
-    asig = AnalogSignal.newByDTO(dto_asig._dto_regularly_sampled_time_series)
-    asig._dto_analog_signal = dto_asig
-    return asig
-
-  def get_list_of_analog_signals(self):
-    list_of_anasigs = []
-    for idx, anasig in enumerate(self._dtos_analog_signal):
-      list_of_anasigs.append(self.get_analog_signal(idx))
-    return list_of_anasigs
-
-  def info(self):
-    print self._dtos_analog_signal
-
-@addAddendumAccess("_dto_analog_signal")
-class AnalogSignal(djcls.RegularlySampledTimeSeries):
+@addDictAccessByAttrs(['file_origin'], 'badges')
+@addProxyAttributes(['name', 'description', 'flag', 'badges'], '_dto_analog_signal')
+@addProxyAttributes(
+    ['uuid', 'segment', 'recording_channel'], '_dto_analog_signal')
+class AnalogSignal(RegularlySampledTimeSeries):
   def __init__(self, *args, **kwargs):
-    # real initialization takes place at
-    # ``RegularlySampledTimeSeries.__newByDTO__(...)``
-    # => initial usage equivalent to ``RegularlySampledTimeSeries``
-    #
-    # initialize default-attributes for structural inforamtion of
-    # AnalogSignalsa
-    self._dto_analog_signal = AnalogSignalDTO()
-    self._addendum = self._dto_analog_signal._addendum
+    # real initialization takes place at `RegularlySampledTimeSeries.__newByDTO__(...)`
+    self._dto_analog_signal = DTOAnalogSignal()
+    self.__init_finalize__()
+
+  def __init_finalize__(self):
+    self._dto_analog_signal.dto_regularly_sampled_time_series = \
+        self._dto
+
+  @classmethod
+  def newByDTOAnalogSignal(cls, dto):
+    obj = cls.newByDTO(dto.dto_regularly_sampled_time_series)
+    obj._dto_analog_signal = dto
+    obj.__init_finalize__()
+    return obj
  
-  def get_my_special_signal(self):
-    print "super signal"
-  
-  def getFavorite(self):
-    return self._dto_analog_signal.favorite
+  def getBeanbag(self):
+    return self.__class__.__base__.newByDTO(
+        self._dto)
 
-  def setFavorite(self, value):
-    self._dto_analog_signal.favorite = value
+  def getDTOAnalogSignal(self):
+    return self._dto_analog_signal
 
-  def getDescription(self):
-    return self._dto_analog_signal.description
+@addDictAccessByAttrs(['file_origin'], 'badges')
+@addProxyAttributes(['name', 'description', 'flag', 'badges'], '_dto_spike_times')
+@addProxyAttributes(
+    ['uuid', 'segment', 'unit'], '_dto_spike_times')
+class SpikeTrain(SpikeTimes):
+  def __init__(self, *args, **kwargs):
+    # real initialization takes place at `RegularlySampledTimeSeries.__newByDTO__(...)`
+    self._dto_spike_times = DTOSpikeTimes()
+    self.__init_finalize__()
 
-  def setDescription(self, value):
-    self._dto_analog_signal.value = value
+  def __init_finalize__(self):
+    self._dto_spike_train.dto_spike_times = \
+        self._dto
 
-  def getRegularlySampledTimeSeries(self):
-    return djcls.RegularlySampledTimeSeries.newByDTO(self._dto_rsts)
 
-  favorite = property(getFavorite, setFavorite)
-  description = property(getDescription, setDescription)
+# ----------------------------
+
+# Adding ListViews:
+@property
+def analog_signals(self):
+  if not hasattr(self, '_analog_signals'):
+    self._analog_signals = ListView(
+        self.dto_analog_signals,
+        AnalogSignal.newByDTOAnalogSignal,
+        AnalogSignal.getDTOAnalogSignal)
+  return self._analog_signals
+
+Segment.analog_signals = analog_signals
+RecordingChannel.analog_signals = analog_signals

@@ -9,6 +9,16 @@ from datajongleur.utils.sa import NumpyType, UUID, UUIDMixin
 PREFIX = "beanbag_"
 from datajongleur.addendum.models import Addendum, AddendumBadgeMap
 
+def catchAttributeError(func):
+  def dec(*args, **kwargs):
+    try:
+      return func(*args, **kwargs)
+    except AttributeError:
+      print "in Exception"
+      "In case that there is no ``Addendum`` specified, yet."
+      return None
+  return dec
+
 ##########
 # Identity
 ##########
@@ -22,66 +32,50 @@ class DTOIdentity(UUIDMixin, Base):
   dto_type = sa.Column(sa.String, nullable=False)
   __mapper_args__ = {'polymorphic_on': dto_type}
 
-  # Property ``addendum_object`` is defined as backref within ``Addendum``
-  def add_badge(self, badge_dict={}, **kwargs):
-    if self.addendum_object is None:
-      self.addendum_object = Addendum()
-    badge_dict.update(kwargs)
-    self.addendum_object.badges = badge_dict
-
-  _name = association_proxy('addendum_object', 'name',
+  _name = association_proxy('addendum', 'name',
       creator=lambda name: Addendum(
         name=name, description='', flag=False))
-  _description = association_proxy('addendum_object', 'description',
+  _description = association_proxy('addendum', 'description',
       creator=lambda description: Addendum(
         name='', description=description, flag=False))
-  _flag = association_proxy('addendum_object', 'flag',
+  _flag = association_proxy('addendum', 'flag',
       creator=lambda flag: Addendum(
         name='', description='', flag=flag))
+  _badges = association_proxy ('addendum', 'badges',
+      creator=lambda badges: Addendum(
+        name='', description='', flag=False, badges=badges))
 
   @property
+  @catchAttributeError
   def badges(self):
-    try:
-      return self.addendum_object.badges
-    except AttributeError:
-      "In case that there is no ``Addendum`` specified, yet."
-      return None
+    return self._badges
 
   @badges.setter
   def badges(self, value):
-    self.add_badge(value)
+    self._badges = value
 
   @property
+  @catchAttributeError
   def name(self):
-    try:
-      return self._name
-    except AttributeError:
-      "In case that there is no ``Addendum`` specified, yet."
-      return ""
+    return self._name
 
   @name.setter
   def name(self, value):
     self._name = value
 
   @property
+  @catchAttributeError
   def description(self):
-    try:
-      return self._description
-    except AttributeError:
-      "In case that there is no ``Addendum`` specified, yet."
-      return ""
+    return self._description
 
   @description.setter
   def description(self, value):
     self._description = value
 
   @property
+  @catchAttributeError
   def flag(self):
-    try:
-      return self._flag
-    except AttributeError:
-      "In case that there is no ``Addendum`` specified, yet."
-      return ""
+    return self._flag
 
   @flag.setter
   def flag(self, value):
