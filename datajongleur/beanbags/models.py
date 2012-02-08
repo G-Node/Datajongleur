@@ -26,8 +26,12 @@ def catchAttributeError(func):
 
 class DTOIdentity(UUIDMixin, Base):
   __tablename__ = PREFIX + 'identities'
-  modification_time = sa.Column(
-      'modification_time', 
+  mtime = sa.Column(
+      'mtime', 
+      sa.DateTime,
+      default=dt.datetime.now())
+  ctime = sa.Column(
+      'ctime', 
       sa.DateTime,
       default=dt.datetime.now())
   dto_type = sa.Column(sa.String, nullable=False)
