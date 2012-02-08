@@ -4,6 +4,7 @@ import sqlalchemy.orm as orm
 from sqlalchemy.ext.associationproxy import association_proxy
 from sqlalchemy.ext.declarative import declared_attr
 import uuid
+import json
 from datajongleur import Base, DBSession
 from datajongleur.utils.sa import NumpyType, UUID, UUIDMixin
 PREFIX = "beanbag_"
@@ -93,6 +94,28 @@ class DTOQuantity(DTOIdentity):
       primary_key=True)
   amount = sa.Column('amount', NumpyType)
   units = sa.Column('units', sa.String)
+
+
+class DTOInfoQuantity(DTOIdentity):
+  __tablename__ = PREFIX + 'info_quantities'
+  __mapper_args__ = {'polymorphic_identity': 'InfoQuantity'}
+  uuid = sa.Column(
+      sa.ForeignKey(PREFIX + 'identities.uuid'),
+      primary_key=True)
+  amount = sa.Column('amount', NumpyType)
+  units = sa.Column('units', sa.String)
+  info_attributes = sa.Column('info_attributes', sa.PickleType)
+
+  def __init__(self, amount, units, *args, **kwargs):
+    self.amount = amount
+    self.units = units
+    self.info_attributes = {}
+    for arg in args:
+      assert type(arg) == dict, "args have to be of type `dict`"
+      kwargs.update(arg)
+    for k, v in kwargs.iteritems():
+      self.info_attributes[k] = v
+
 
 class DTOIDPoint(DTOIdentity):
   __tablename__ = PREFIX + 'id_points'

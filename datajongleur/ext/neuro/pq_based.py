@@ -4,8 +4,8 @@ import json
 import pdb
 
 import datajongleur.beanbags.interfaces as i
-from datajongleur.beanbags.quantity import Quantity 
-from datajongleur.beanbags.quantity import InfoQuantity
+from datajongleur.beanbags.pq_based import Quantity 
+from datajongleur.beanbags.pq_based import InfoQuantity
 from datajongleur.ext.neuro.models import *
 #from datajongleur import DBSession
 
@@ -43,7 +43,7 @@ class Period(InfoQuantity, i.Interval):
         dto.units,
         ).view(cls)
     obj._dto = dto
-    obj._info_attributes = {}
+    obj.info_attributes = {}
     return obj
 
   def __getitem__(self, key):
@@ -114,8 +114,8 @@ class SampledTimeSeries(InfoQuantity, i.SampledSignal, i.Interval):
     obj = Quantity(
         dto.amount,
         dto.units).view(cls)
-    obj._info_attributes = {}
-    obj._info_attributes['signal_base'] = Quantity(
+    obj.info_attributes = {}
+    obj.info_attributes['signal_base'] = Quantity(
         dto.signal_base_amount,
         dto.signal_base_units)
     obj._dto = dto
@@ -123,17 +123,17 @@ class SampledTimeSeries(InfoQuantity, i.SampledSignal, i.Interval):
 
   # ----- Implementing Interval ------
   def getStart(self):
-    return self._info_attributes['signal_base'].min()
+    return self.info_attributes['signal_base'].min()
 
   def getStop(self):
-    return self._info_attributes['signal_base'].max()
+    return self.info_attributes['signal_base'].max()
 
   def getLength(self):
     return self.stop - self.start
 
   # ----- Implementing SampledSignal  ------
   def getSignalBase(self):
-    return self._info_attributes['signal_base']
+    return self.info_attributes['signal_base']
 
   def getNSamplingPoints(self):
     return Quantity(len(self), '')
@@ -206,17 +206,17 @@ class SpikeTimes(SampledTimeSeries):
     obj = Quantity(
         dto.amount,
         dto.units).view(cls)
-    obj._info_attributes = {}
-    obj._info_attributes['signal'] = Quantity(np.ones(len(
+    obj.info_attributes = {}
+    obj.info_attributes['signal'] = Quantity(np.ones(len(
       dto.amount), dtype=bool), '')#, dtype=bool)
-    obj._info_attributes['signal_base'] = Quantity(
+    obj.info_attributes['signal_base'] = Quantity(
         dto.amount, 
         dto.units)
     obj._dto = dto
     return obj
 
   def getSignal(self):
-    return self._info_attributes['signal']
+    return self.info_attributes['signal']
   signal = property(
       getSignal,
       i.Value.throwSetImmutableAttributeError)
@@ -248,11 +248,11 @@ class RegularlySampledTimeSeries(SampledTimeSeries, i.RegularlySampledSignal):
     obj = Quantity(
         dto.amount,
         dto.units).view(cls)
-    obj._info_attributes = {}
-    obj._info_attributes['start'] = Quantity(
+    obj.info_attributes = {}
+    obj.info_attributes['start'] = Quantity(
         dto.start,
         dto.time_units)
-    obj._info_attributes['stop'] = Quantity(
+    obj.info_attributes['stop'] = Quantity(
         dto.stop,
         dto.time_units)
     obj._dto = dto
@@ -263,10 +263,10 @@ class RegularlySampledTimeSeries(SampledTimeSeries, i.RegularlySampledSignal):
 
   # ----- Implementation Period (diff. SampledTimeSeries)------
   def getStart(self):
-    return self._info_attributes['start']
+    return self.info_attributes['start']
 
   def getStop(self):
-    return self._info_attributes['stop']
+    return self.info_attributes['stop']
 
   def getSignalBase(self):
     return np.linspace(self.start, self.stop, self.n_sample_points)
@@ -345,11 +345,11 @@ class BinnedSpikes(RegularlySampledTimeSeries):
   def newByDTO(cls, dto):
     obj = Quantity(
         dto.amount, '').view(cls)
-    obj._info_attributes = {}
-    obj._info_attributes['start'] = Quantity(
+    obj.info_attributes = {}
+    obj.info_attributes['start'] = Quantity(
         dto.start,
         dto.time_units)
-    obj._info_attributes['stop'] = Quantity(
+    obj.info_attributes['stop'] = Quantity(
         dto.stop,
         dto.time_units)
     obj._dto = dto
