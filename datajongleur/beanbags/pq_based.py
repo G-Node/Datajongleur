@@ -1,128 +1,80 @@
 import numpy as np
-import interfaces as i
 import quantities as pq
+
+import interfaces as i
 from datajongleur.beanbags.models import DTOQuantity, DTOInfoQuantity
-from datajongleur.utils.sa import passAttrDTO, addInfoQuantityDBAccess
+from datajongleur.utils.sa import addInfoQuantityDBAccess
+from datajongleur.utils.miscellaneous import kwargs2info_dict
+from datajongleur.utils.miscellaneous import change_return_type
+
 
 ###################
 # Quantity
 ###################
 
-@addInfoQuantityDBAccess()
-@passAttrDTO
-class Quantity(pq.Quantity, i.Quantity):
-  _BBDTO = DTOQuantity
+@addInfoQuantityDBAccess
+@change_return_type(pq.Quantity)
+class InfoQuantity(pq.Quantity, i.Quantity):
+  """
+  Note: InfoQuantities are immutable. In order to change values, you need to
+  work with a `copy()` and apply `setflags(write=True)`.
+  """
+  _DTO = DTOInfoQuantity
 
-  def __new__(
-      cls,
-      amount,
-      units,
-      **kwargs
-      ):
-    amount = np.array(amount)
-    bb_dto = cls._BBDTO(amount=amount, units=units)
-    return cls.newByDTO(bb_dto)
+  def __new__(cls, data, units='', dtype=None, copy=True,
+      *args, **kwargs):
+    obj = pq.Quantity.__new__(cls, data, units=units, dtype=dtype, copy=copy)
+    obj.setflags(write=False) # Immutable
+    return obj
 
+  def __init__(self, data, units='', dtype=None, copy=True, **kwargs):
+    info = kwargs2info_dict(kwargs)
+    self._dto = self._DTO(
+        amount=self.magnitude,
+        units=self.dimensionality.string,
+        **info)
+    
   @classmethod
-  def newByDTO(cls, bb_dto):
-    obj = pq.Quantity.__new__(
+  def newByDTO(cls, dto):
+    print dto.amount, dto.units
+    obj = cls.__new__(
         cls,
-        bb_dto.amount,
-        bb_dto.units).view(cls)
-    obj.setflags(write=False) # Immutable
-    obj._bb_dto = bb_dto
+        dto.amount,
+        dto.units,
+        )
+    obj._dto = dto
     return obj
-
-  def __array_finalize__(self, obj):
-    pq.Quantity.__array_finalize__ (self, obj)
-    if hasattr(obj, '_bb_dto'):
-      self._bb_dto = obj._bb_dto
-      if hasattr(obj._bb_dto, 'info_attributes'):
-        # PR: durty hack --> needs to be changed
-        if obj._bb_dto.info_attributes == {'copy': False}:
-          obj._bb_dto.info_attributes = {}
-
-  def __array_wrap__(self, obj, context=None):
-    """
-    Returns a Quantity-object in case of arithmetic, e.g. ``a + b``
-    """
-    print "in wrap"
-    obj1 = pq.Quantity.__array_wrap__ (self, obj, context)
-    obj2 = Quantity(obj1.amount, obj1.units)
-    return obj2
-
+  
+  
   def getDTO(self):
-    if not hasattr(self, '_bb_dto'):
-      bb_dto = self.__class__._BBDTO(self.amount, self.units)
-      self._bb_dto = bb_dto
-    return self._bb_dto
-  "bb_dto = property(getDTO)"
-
-  def getAmount(self):
-    return self.magnitude
-  amount = property(getAmount)
-
-  def getUnits(self):
-    return self.dimensionality.string
-  units = property(getUnits)
-
-  def __repr__(self):
-    return "%s(%s, %r)" %(
-        self.__class__.__name__,
-        self.getAmount(),
-        self.getUnits())
-
-
-class InfoQuantity(Quantity):
-  _BBDTO = DTOInfoQuantity
-  def __new__(cls, amount, units='', **kwargs):
-    kwargs['amount'] = amount
-    kwargs['units'] = units
-    bb_dto = cls._BBDTO(**kwargs)
-    return cls.newByDTO(bb_dto)
-
-  @classmethod
-  def newByDTO(cls, bb_dto):
-    obj = Quantity(
-        bb_dto.amount,
-        bb_dto.units,
-        ).view(cls)
-    obj._bb_dto = bb_dto
-    obj.setflags(write=False) # Immutable
-    return obj
+    return self._dto
 
   @property
-  def info_attributes(self):
-    return self._bb_dto.info_attributes
+  def info(self):
+    return self._dto.info
 
-  @info_attributes.setter
-  def info_attributes(self, value):
+  @info.setter
+  def info(self, value):
     assert type(value) == dict, "TypeError: `value` has to be of type `dict`"
-    self._bb_dto.info_attributes = value
+    self._dto.info = value
 
-  def __array_prepare__(self, obj, context=None):
-    print "---------------------------------------------- preparing"
-    res = Quantity.__array_prepare__ (self, obj, context)
-    return res
+  @property
+  def amount(self):
+    return self.magnitude
 
-  def __array_wrap__(self, obj, context=None):
-    """
-    Returns a Quantity-object in case of arithmetic, e.g. ``a + b``
-    """
-    print "wrapping --> InfoQuantity"
-    obj1 = Quantity.__array_wrap__ (self, obj, context)
-    obj2 = Quantity(obj1.amount, obj1.units)
-    return obj2
+  @property
+  def units(self):
+    return self.dimensionality.string
 
   def __repr_main__ (self):
     """ Representation of the inherited Quantity-part"""
-    return "%r\n" % self.view(Quantity)
+    return "%r\n" % self.view(pq.Quantity)
     
   def __repr_info__ (self):
-    if len(self.info_attributes.keys()) == 0:
+    if len(self.info.keys()) == 0:
       return ""
     repr_info = "Info-Attributes:\n"
-    for info_attribute in self.info_attributes.iteritems():
+    for info_attribute in self.info.iteritems():
       repr_info += " %s: %r\n" %(info_attribute[0], info_attribute[1])
     return repr_info
   
@@ -133,6 +85,6 @@ class InfoQuantity(Quantity):
 
 
 if __name__ == '__main__':
-  a = Quantity([2,3], "mV")
-  b = Quantity(1, "s")
-  c = Quantity(2, "s")
+  a = InfoQuantity([2,3], "mV", info={'vorname': "max"}, alter=3)
+  b = InfoQuantity(1, "s", name="Max", last_name="Mustermann")
+  c = InfoQuantity(2, "s")

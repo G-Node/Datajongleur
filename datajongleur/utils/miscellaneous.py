@@ -1,3 +1,63 @@
+def unspec_args2info_dict(args, kwargs):
+  """
+  Turns `args` and `kwargs` into one dictionary `info` by the following rule:
+  
+  1. If there is an argument *info*: this will be the base info-dict `info`.
+     Otherwise the `info = {}`.
+  2. `info` gets updated by *args*. *args* have to be of type `dict`.
+  3. `info` gets updated by *kwargs*
+
+  => Priority: kwargs > args > info
+
+  Examples:
+  def foo(*args, **kwargs):
+    return unspec_args2info_dict(args, kwargs)
+  print foo(
+    {'vorname': 'Max'},
+    {'nachname':'Mustermann'},
+    info={'vorname': 'Moritz', 'alter': 100},
+    nachname = 'Busch')
+  >>> {'nachname': 'Busch', 'vorname': 'Max', 'alter': 100}
+  """
+  if kwargs.has_key('info'):
+    info = kwargs.pop('info')
+    assert type(info) == dict, "info has to be of type `dict`"
+  else:
+    info = {}
+  for arg in args:
+    assert type(arg) == dict, "args have to be of type `dict`"
+    info.update(arg)
+  for k, v in kwargs.iteritems():
+    info[k] = v
+  return info
+
+def kwargs2info_dict(kwargs):
+  """
+  Turns `kwargs` into one dictionary `info` by the following rule:
+  
+  1. If there is an argument *info*: this will be the base info-dict `info`.
+     Otherwise the `info = {}`.
+  2. `info` gets updated by *kwargs*
+
+  => Priority: kwargs > info
+
+  Examples:
+  def foo(**kwargs):
+    return kwargs2info_dict(kwargs)
+  print foo(
+    info={'vorname': 'Max', 'nachname': 'Moritz', 'alter': 100},
+    nachname = 'Busch')
+  >>> {'nachname': 'Busch', 'vorname': 'Max', 'alter': 100}
+  """
+  if kwargs.has_key('info'):
+    info = kwargs.pop('info')
+    assert type(info) == dict, "info has to be of type `dict`"
+  else:
+    info = {}
+  for k, v in kwargs.iteritems():
+    info[k] = v
+  return info
+
 def addProxyAttributes(attr_names, object_attr):
   def deco(cls):
     for attr_name in attr_names:
@@ -34,6 +94,78 @@ def addDictAccessByAttrs(key_names, dict_name):
     return cls
   return deco 
 
+def change_return_type(result_cls):
+  def decorator_func(cls):
+    def AdjustReturnType(func):
+      def wrappedFunc(self, *args, **kwargs):
+        return func(self, *args, **kwargs).view(result_cls)
+      return wrappedFunc
+
+    def generateAdjustedFunction(functionName):
+      @AdjustReturnType
+      def foo(self, *args, **kwargs):
+        function = getattr(cls.__base__, functionName)
+        return function(self, *args, **kwargs)
+      return foo
+    # adjusting return types of analysis functions
+    functionNames = [
+        '_get_units',
+        '_set_units',
+        'rescale',
+        'ptp',
+        'clip',
+        'copy',
+        'compress',
+        'conj',
+        'cumprod',
+        'cumsum',
+        'diagonal',
+        'dot',
+        'flatten',
+        'getfield',
+        'round',
+        'trace',
+        'max',
+        'mean',
+        'min',
+        'newbyteorder',
+        'prod',
+        'ravel',
+        'reshape',
+        'resize',
+        'round',
+        'std',
+        'sum',
+        'trace',
+        'transpose',
+        'var',
+        '__getitem__',
+        '__getslice__',
+        '__abs__',
+        #
+        '__add__',
+        '__div__',
+        '__divmod__',
+        '__floordiv__'
+        '__mod__',
+        '__mul__',
+        '__pow__',
+        '__sub__',
+        #
+        '__radd__',
+        '__div__',
+        '__divmod__',
+        '__rfloordiv__',
+        '__rmod__',
+        '__rmul__',
+        '__rpow__',
+        '__rsub__',
+        ]
+    for functionName in functionNames:
+      foo = generateAdjustedFunction(functionName)
+      setattr(cls, functionName, foo)
+    return cls
+  return decorator_func
 
 class ListView(list):
   def __init__(self, raw_list, raw2new, new2raw):

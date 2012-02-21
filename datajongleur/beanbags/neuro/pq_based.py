@@ -4,15 +4,15 @@ import json
 import pdb
 
 import datajongleur.beanbags.interfaces as i
-from datajongleur.beanbags.pq_based import Quantity 
 from datajongleur.beanbags.pq_based import InfoQuantity
-from datajongleur.ext.neuro.models import *
+from .models import *
+from datajongleur.utils.miscellaneous import *
 #from datajongleur import DBSession
 
-@addInfoQuantityDBAccess()
-@passAttrDTO
+@addInfoQuantityDBAccess
+@addProxyAttributes(['uuid'], '_dto')
 class TimePoint(InfoQuantity):
-  _BBDTO = DTOTimePoint
+  _DTO = DTOTimePoint
 
   def getTime(self):
     return self 
@@ -25,16 +25,19 @@ class TimePoint(InfoQuantity):
   def getHashValue(self):
     return sha1(self.__repr__()).hexdigest()
 
+  def getInfo(self):
+    return {}
+  info = property(getInfo)
+
   # ------- Mapping Properties -----------
   time = property(
       getTime,
       i.Value.throwSetImmutableAttributeError)
 
 
-@addInfoQuantityDBAccess()
-@passAttrDTO
+@addInfoQuantityDBAccess
 class Period(InfoQuantity, i.Interval):
-  _BBDTO = DTOPeriod
+  _DTO = DTOPeriod
 
   @classmethod
   def newByDTO(cls, dto):
@@ -85,10 +88,9 @@ class Period(InfoQuantity, i.Interval):
   length = property(getLength)
 
 
-@addInfoQuantityDBAccess()
-@passAttrDTO
+@addInfoQuantityDBAccess
 class SampledTimeSeries(InfoQuantity, i.SampledSignal, i.Interval):
-  _BBDTO = DTOSampledTimeSeries
+  _DTO = DTOSampledTimeSeries
   def __new__(cls,
       amount,
       units,
@@ -101,7 +103,7 @@ class SampledTimeSeries(InfoQuantity, i.SampledSignal, i.Interval):
     #: Call the parent class constructor
     assert len(amount) == len(signal_base_amount),\
         "len(signal) != len(signal_base_amount)."
-    dto = cls._BBDTO(
+    dto = cls._DTO(
         amount,
         units,
         signal_base_amount,
@@ -181,21 +183,20 @@ class SampledTimeSeries(InfoQuantity, i.SampledSignal, i.Interval):
       i.Value.throwSetImmutableAttributeError)
 
   
-@addInfoQuantityDBAccess()
-@passAttrDTO
+@addInfoQuantityDBAccess
 class SpikeTimes(SampledTimeSeries):
   """
   ``SpikeTimes`` are a special case of ``SampledSignal`` with value 1 for
   ``signals`` and spike times as ``signal_base``, respectively.
   """
-  _BBDTO = DTOSpikeTimes
+  _DTO = DTOSpikeTimes
   def __new__(cls,
       amount,
       units,
       **kwargs # to catch e.g. ``dtype``, ``copy`` attributes
       ):
     #: Call the parent class constructor
-    dto = cls._BBDTO(
+    dto = cls._DTO(
         amount,
         units)
     obj = cls.newByDTO(dto)
@@ -221,8 +222,7 @@ class SpikeTimes(SampledTimeSeries):
       getSignal,
       i.Value.throwSetImmutableAttributeError)
   
-@addInfoQuantityDBAccess()
-@passAttrDTO
+@addInfoQuantityDBAccess
 class RegularlySampledTimeSeries(SampledTimeSeries, i.RegularlySampledSignal):
   _DTO = DTORegularlySampledTimeSeries
   def __new__(cls,
@@ -312,14 +312,13 @@ class RegularlySampledTimeSeries(SampledTimeSeries, i.RegularlySampledSignal):
       i.Value.throwSetImmutableAttributeError)
 
 
-@addInfoQuantityDBAccess()
-@passAttrDTO
+@addInfoQuantityDBAccess
 class BinnedSpikes(RegularlySampledTimeSeries):
   """
   ``BinnedSpikes`` are a special case of ``RegularlySampledSignal`` with
   integer values for ``signals`` and bin-times as ``signal_base``.
   """
-  _BBDTO = DTOBinnedSpikes
+  _DTO = DTOBinnedSpikes
   def __new__(
       cls,
       amount,

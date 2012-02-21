@@ -5,7 +5,7 @@ import json
 import uuid
 from datajongleur import Base
 from datajongleur.utils.sa import NumpyType, UUID
-from datajongleur.utils.sa import passAttrDTO, addInfoQuantityDBAccess
+from datajongleur.utils.sa import addInfoQuantityDBAccess
 from datajongleur.beanbags.models import DTOIdentity
 from datajongleur.beanbags.models import PREFIX as BB_PREFIX
 

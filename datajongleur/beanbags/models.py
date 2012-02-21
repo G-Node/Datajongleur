@@ -9,6 +9,8 @@ from datajongleur import Base, DBSession
 from datajongleur.utils.sa import NumpyType, UUID, UUIDMixin
 PREFIX = "beanbag_"
 from datajongleur.addendum.models import Addendum, AddendumBadgeMap
+from datajongleur.utils.miscellaneous import kwargs2info_dict
+
 
 def catchAttributeError(func):
   def dec(*args, **kwargs):
@@ -108,17 +110,12 @@ class DTOInfoQuantity(DTOIdentity):
       primary_key=True)
   amount = sa.Column('amount', NumpyType)
   units = sa.Column('units', sa.String)
-  info_attributes = sa.Column('info_attributes', sa.PickleType)
+  info = sa.Column('info', sa.PickleType)
 
-  def __init__(self, amount, units, *args, **kwargs):
+  def __init__(self, amount, units, **kwargs):
     self.amount = amount
     self.units = units
-    self.info_attributes = {}
-    for arg in args:
-      assert type(arg) == dict, "args have to be of type `dict`"
-      kwargs.update(arg)
-    for k, v in kwargs.iteritems():
-      self.info_attributes[k] = v
+    self.info = kwargs2info_dict(kwargs)
 
 
 class DTOIDPoint(DTOIdentity):
@@ -130,6 +127,7 @@ class DTOIDPoint(DTOIdentity):
   x = sa.Column('x', sa.Numeric)
   units = sa.Column('units', sa.String)
 
+
 class DTOIIDPoint(DTOIdentity):
   __tablename__ = PREFIX + 'iid_points'
   __mapper_args__ = {'polymorphic_identity': 'IIDPoint'}
@@ -139,6 +137,7 @@ class DTOIIDPoint(DTOIdentity):
   x = sa.Column('x', sa.Numeric)
   y = sa.Column('y', sa.Numeric)
   units = sa.Column('units', sa.String)
+
 
 class DTOIIIDPoint(DTOIdentity):
   __tablename__ = PREFIX + 'iiid_points'
@@ -150,6 +149,7 @@ class DTOIIIDPoint(DTOIdentity):
   y = sa.Column('y', sa.Numeric)
   z = sa.Column('z', sa.Numeric)
   units = sa.Column('units', sa.String)
+
 
 def initialize_sql(engine):
   Base.metadata.bind = engine

@@ -1,4 +1,5 @@
 import numpy as np
+import quantities as pq
 import zlib
 import uuid as uuid_package # to avoid confusion with attribute `uuid`
 
@@ -50,6 +51,7 @@ class UUIDMixin(object):
       primary_key=True)
 
 
+
 class NumpyType (sa.types.TypeDecorator):
   impl = sa.types.LargeBinary
 
@@ -90,6 +92,8 @@ class NumpyTypePGSpecific (sa.types.TypeDecorator):
 def getSession():
   return DBSession()
 
+"""
+PR: not necessary anymore -> use `addProxyAttributes` instead.
 def passAttrDTO(cls):
   def genGetMyAttr(attr_name):
     def getMyAttr(self):
@@ -102,44 +106,41 @@ def passAttrDTO(cls):
         print Exception
         print e
     return getMyAttr
-  #cls.getKey = genGetMyAttr('key')
-  #cls.key = property(cls.getKey)
   cls.getUUID = genGetMyAttr('uuid')
   cls.uuid = property(cls.getUUID)
   return cls
+"""
 
-def addInfoQuantityDBAccess():
+def addInfoQuantityDBAccess(cls):
   """
   This decorator adds the following methods:
   * ``load(PK)``
   * ``save()``
   """
-  def decorateClass(cls):
-    @classmethod
-    def newBySession(cls, uuid):
-      if not hasattr(cls, "session"):
-        cls.session = getSession()
-      dto = cls.session.query(cls._BBDTO).filter(
-          getattr(cls._BBDTO, 'uuid') == uuid).first()
-      return cls.newByDTO(dto)
-    @classmethod
-    def load(cls, uuid):
-      return cls.newBySession(uuid)
-    def save(self):
-      if not hasattr(self, "session"):
-        self.__class__.session = getSession()
-      dto = self.getDTO()
-      uuid = self.getUUID()
-      self.session.add (dto)
-      self.session.commit ()
-      if uuid is not self.uuid:
-        print "Assigned attribute ``uuid`` --> %r" % (self.uuid)
-      
-    cls.newBySession = newBySession
-    cls.load = load
-    cls.save = save
-    return cls
-  return decorateClass
+  @classmethod
+  def newBySession(cls, uuid):
+    if not hasattr(cls, "session"):
+      cls.session = getSession()
+    dto = cls.session.query(cls._DTO).filter(
+        getattr(cls._DTO, 'uuid') == uuid).first()
+    return cls.newByDTO(dto)
+  @classmethod
+  def load(cls, uuid):
+    return cls.newBySession(uuid)
+  def save(self):
+    if not hasattr(self, "session"):
+      self.__class__.session = getSession()
+    dto = self.getDTO()
+    uuid = self.uuid
+    self.session.add (dto)
+    self.session.commit ()
+    if uuid is not self.uuid:
+      print "Assigned attribute ``uuid`` --> %r" % (self.uuid)
+    
+  cls.newBySession = newBySession
+  cls.load = load
+  cls.save = save
+  return cls
 
 ## (end: Decorators) ##
 #######################
