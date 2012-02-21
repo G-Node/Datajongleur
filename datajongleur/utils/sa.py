@@ -51,7 +51,6 @@ class UUIDMixin(object):
       primary_key=True)
 
 
-
 class NumpyType (sa.types.TypeDecorator):
   impl = sa.types.LargeBinary
 

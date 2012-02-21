@@ -7,6 +7,7 @@ import datajongleur.beanbags.interfaces as i
 from datajongleur.beanbags.pq_based import InfoQuantity
 from .models import *
 from datajongleur.utils.miscellaneous import *
+from datajongleur.utils.sa import addInfoQuantityDBAccess
 #from datajongleur import DBSession
 
 @addInfoQuantityDBAccess
@@ -36,17 +37,17 @@ class TimePoint(InfoQuantity):
 
 
 @addInfoQuantityDBAccess
+@addProxyAttributes(['uuid'], '_dto')
 class Period(InfoQuantity, i.Interval):
   _DTO = DTOPeriod
 
   @classmethod
   def newByDTO(cls, dto):
-    obj = Quantity(
+    obj = InfoQuantity(
         [dto.start, dto.stop],
         dto.units,
         ).view(cls)
     obj._dto = dto
-    obj.info_attributes = {}
     return obj
 
   def __getitem__(self, key):
@@ -87,8 +88,13 @@ class Period(InfoQuantity, i.Interval):
   stop = property(getStop)
   length = property(getLength)
 
+  @property
+  def info(self):
+    return {}
+
 
 @addInfoQuantityDBAccess
+@addProxyAttributes(['uuid'], '_dto')
 class SampledTimeSeries(InfoQuantity, i.SampledSignal, i.Interval):
   _DTO = DTOSampledTimeSeries
   def __new__(cls,
@@ -184,6 +190,7 @@ class SampledTimeSeries(InfoQuantity, i.SampledSignal, i.Interval):
 
   
 @addInfoQuantityDBAccess
+@addProxyAttributes(['uuid'], '_dto')
 class SpikeTimes(SampledTimeSeries):
   """
   ``SpikeTimes`` are a special case of ``SampledSignal`` with value 1 for
@@ -223,6 +230,7 @@ class SpikeTimes(SampledTimeSeries):
       i.Value.throwSetImmutableAttributeError)
   
 @addInfoQuantityDBAccess
+@addProxyAttributes(['uuid'], '_dto')
 class RegularlySampledTimeSeries(SampledTimeSeries, i.RegularlySampledSignal):
   _DTO = DTORegularlySampledTimeSeries
   def __new__(cls,
@@ -313,6 +321,7 @@ class RegularlySampledTimeSeries(SampledTimeSeries, i.RegularlySampledSignal):
 
 
 @addInfoQuantityDBAccess
+@addProxyAttributes(['uuid'], '_dto')
 class BinnedSpikes(RegularlySampledTimeSeries):
   """
   ``BinnedSpikes`` are a special case of ``RegularlySampledSignal`` with

@@ -24,6 +24,14 @@ addendum_addendum_maps = sa.Table(
       sa.ForeignKey (PREFIX + 'addenda.uuid')),
     sa.UniqueConstraint('addendum_uuid', 'addendum_ref_uuid'),
     )
+"""
+sa.ForeignKeyConstraint(
+  ['addendum_uuid'],
+  [PREFIX + 'addenda.uuid']),
+sa.ForeignKeyConstraint(
+  ['addendum_ref_uuid'],
+  [PREFIX + 'addenda.uuid']),
+"""
 
 
 class Addendum(UUIDMixin, Base):
@@ -66,9 +74,12 @@ class Addendum(UUIDMixin, Base):
       'Addendum',
       secondary=addendum_addendum_maps,
       primaryjoin=\
-          uuid==addendum_addendum_maps.c.addendum_uuid,
+          'uuid'==addendum_addendum_maps.c.addendum_uuid,
       secondaryjoin=\
-          uuid==addendum_addendum_maps.c.addendum_ref_uuid,
+          'uuid'==addendum_addendum_maps.c.addendum_ref_uuid,
+      foreign_keys=[
+        addendum_addendum_maps.c.addendum_uuid,
+        addendum_addendum_maps.c.addendum_ref_uuid],
       backref='referenced_from')
 
   def getChildren(self):

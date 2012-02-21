@@ -45,7 +45,6 @@ class InfoQuantity(pq.Quantity, i.Quantity):
     obj._dto = dto
     return obj
   
-  
   def getDTO(self):
     return self._dto
 
