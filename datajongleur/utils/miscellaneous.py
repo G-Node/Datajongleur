@@ -58,7 +58,7 @@ def kwargs2info_dict(kwargs):
     info[k] = v
   return info
 
-def addProxyAttributes(attr_names, object_attr):
+def addAttributesProxy(attr_names, object_attr):
   def deco(cls):
     for attr_name in attr_names:
       def getAttr(self, attr_name=attr_name):
@@ -98,7 +98,7 @@ def change_return_type(result_cls):
   def decorator_func(cls):
     def AdjustReturnType(func):
       def wrappedFunc(self, *args, **kwargs):
-        return func(self, *args, **kwargs).view(result_cls)
+        return func(self.view(result_cls), *args, **kwargs)
       return wrappedFunc
 
     def generateAdjustedFunction(functionName):

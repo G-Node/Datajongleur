@@ -92,7 +92,7 @@ def getSession():
   return DBSession()
 
 """
-PR: not necessary anymore -> use `addProxyAttributes` instead.
+PR: not necessary anymore -> use `addAttributesProxy` instead.
 def passAttrDTO(cls):
   def genGetMyAttr(attr_name):
     def getMyAttr(self):
@@ -140,6 +140,22 @@ def addInfoQuantityDBAccess(cls):
   cls.load = load
   cls.save = save
   return cls
+
+def dtoAttrs2Info(attrs_to_exclude=['amount', 'units', 'uuid']):
+  def decorate_func(cls):
+    cols = cls._DTO.__table__.columns.keys()
+    for attr in attrs_to_exclude:
+      cols.remove(attr)
+    @property
+    def info(self):
+      info_dict = {}
+      for col in cols:
+        info_dict[col] = getattr(self._dto, col)
+      return info_dict
+    cls.info = info
+    return cls
+  return decorate_func
+
 
 ## (end: Decorators) ##
 #######################

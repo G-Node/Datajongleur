@@ -5,7 +5,6 @@ import json
 import uuid
 from datajongleur import Base
 from datajongleur.utils.sa import NumpyType, UUID
-from datajongleur.utils.sa import addInfoQuantityDBAccess
 from datajongleur.beanbags.models import DTOIdentity
 from datajongleur.beanbags.models import PREFIX as BB_PREFIX
 
@@ -174,10 +173,11 @@ class DTOBinnedSpikes(DTOIdentity):
   stop = sa.Column('stop', sa.Float)
   time_units = sa.Column('time_units', sa.String)
 
-  def __init__(self, amount, start, stop, time_units):
+  def __init__(self, amount, units, start, stop, time_units):
     self.amount = np.array(amount, 'int')
     self.start = start
     self.stop = stop
+    self.units = ''
     self.time_units = time_units
 
   def checksum_json(self):

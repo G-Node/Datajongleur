@@ -12,8 +12,8 @@ Unit = addDictAccessByAttrs(
     ['file_origin'],'badges')(Unit)
 
 @addDictAccessByAttrs(['file_origin'], 'badges')
-@addProxyAttributes(['name', 'description', 'flag', 'badges'], '_dto_analog_signal')
-@addProxyAttributes(
+@addAttributesProxy(['name', 'description', 'flag', 'badges'], '_dto_analog_signal')
+@addAttributesProxy(
     ['uuid', 'segment', 'recording_channel'], '_dto_analog_signal')
 class AnalogSignal(RegularlySampledTimeSeries):
   def __init__(self, *args, **kwargs):
@@ -40,8 +40,8 @@ class AnalogSignal(RegularlySampledTimeSeries):
     return self._dto_analog_signal
 
 @addDictAccessByAttrs(['file_origin'], 'badges')
-@addProxyAttributes(['name', 'description', 'flag', 'badges'], '_dto_spike_times')
-@addProxyAttributes(
+@addAttributesProxy(['name', 'description', 'flag', 'badges'], '_dto_spike_times')
+@addAttributesProxy(
     ['uuid', 'segment', 'unit'], '_dto_spike_times')
 class SpikeTrain(SpikeTimes):
   def __init__(self, *args, **kwargs):

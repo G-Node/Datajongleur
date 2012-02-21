@@ -1,5 +1,6 @@
 import numpy as np
 import quantities as pq
+from hashlib import sha1
 
 import interfaces as i
 from datajongleur.beanbags.models import DTOQuantity, DTOInfoQuantity
@@ -36,7 +37,6 @@ class InfoQuantity(pq.Quantity, i.Quantity):
     
   @classmethod
   def newByDTO(cls, dto):
-    print dto.amount, dto.units
     obj = cls.__new__(
         cls,
         dto.amount,
@@ -81,6 +81,13 @@ class InfoQuantity(pq.Quantity, i.Quantity):
     head = ">>> %s <<<\n" %(self.__class__.__name__)
     repr_string = "%s\n%s" % (self.__repr_main__(), self.__repr_info__())
     return head + repr_string
+
+  @property
+  def hash(self):
+    return sha1(self.__repr__()).hexdigest()
+  
+  def __hash__(self):
+    return self.hash
 
 
 if __name__ == '__main__':
