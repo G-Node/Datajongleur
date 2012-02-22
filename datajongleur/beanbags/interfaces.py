@@ -114,7 +114,7 @@ class SampledSignal(Quantity):
     raise NotImplementedError
 
 
-class RegularlySampledSignal(SampledSignal):
+class RegularlySampledSignal(SampledSignal , Interval):
   def getSamplingRate(self):
     raise NotImplementedError
   def getStepSize(self):

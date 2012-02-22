@@ -164,6 +164,7 @@ def change_return_type(result_cls):
     for functionName in functionNames:
       foo = generateAdjustedFunction(functionName)
       setattr(cls, functionName, foo)
+    cls._arithmetic_return_type = result_cls
     return cls
   return decorator_func
 

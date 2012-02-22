@@ -2,15 +2,14 @@ import nose
 import quantities as pq
 import numpy as np
 import random
-import datajongleur as dj
 
 from datajongleur.beanbags.neuro.pq_based import *
+from datajongleur.tests import session
 
 numbers = []
 units =[]
 
 def setup_func():
-  session = dj.get_session()
   time_units = ['s', 'ms', 'us', 'ns', 'ps']
   for idx in range(2):
     numbers.append(random.random())
