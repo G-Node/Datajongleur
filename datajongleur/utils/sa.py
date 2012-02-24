@@ -133,8 +133,8 @@ def addInfoQuantityDBAccess(cls):
     uuid = self.uuid
     self.session.add (dto)
     self.session.commit ()
-    if uuid is not self.uuid:
-      print "Assigned attribute ``uuid`` --> %r" % (self.uuid)
+    #if uuid is not self.uuid:
+    #  print "Assigned attribute ``uuid`` --> %r" % (self.uuid)
     
   cls.newBySession = newBySession
   cls.load = load

@@ -1,8 +1,10 @@
-===========
-Modul: core
-===========
+====
+core
+====
 
 .. toctree::
    :maxdepth: 2
    
-   interfaces.rst
+   configuration_file.rst
+   info_quantity.rst
+

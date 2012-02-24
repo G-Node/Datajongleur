@@ -4,16 +4,15 @@ from hashlib import sha1
 
 import interfaces as i
 from datajongleur.beanbags.models import DTOQuantity, DTOInfoQuantity
-from datajongleur.utils.sa import addInfoQuantityDBAccess
-from datajongleur.utils.miscellaneous import kwargs2info_dict
-from datajongleur.utils.miscellaneous import change_return_type
-
+from datajongleur.utils.sa import addInfoQuantityDBAccess, dtoAttrs2Info
+from datajongleur.utils.miscellaneous import *
 
 ###################
 # Quantity
 ###################
 
 @addInfoQuantityDBAccess
+@addAttributesProxy(['uuid'], '_dto')
 @change_return_type(pq.Quantity)
 class InfoQuantity(pq.Quantity, i.Quantity):
   """
@@ -24,7 +23,12 @@ class InfoQuantity(pq.Quantity, i.Quantity):
 
   def __new__(cls, data, units='', dtype=None, copy=True,
       *args, **kwargs):
-    obj = pq.Quantity.__new__(cls, data, units=units, dtype=dtype, copy=copy)
+    obj = cls.__base__.__new__(
+        cls.__base__,
+        data,
+        units=units,
+        dtype=dtype,
+        copy=copy).view(cls)
     obj.setflags(write=False) # Immutable
     return obj
 
@@ -65,26 +69,32 @@ class InfoQuantity(pq.Quantity, i.Quantity):
   def units(self):
     return self.dimensionality.string
 
-  def __repr_main__ (self):
+  def __str_main__ (self):
     """ Representation of the inherited Quantity-part"""
     return "%r\n" % self.view(pq.Quantity)
     
-  def __repr_info__ (self):
+  def __str_info__ (self):
     if len(self.info.keys()) == 0:
       return ""
-    repr_info = "Info-Attributes:\n"
+    str_info = "Info-Attributes:\n"
     for info_attribute in self.info.iteritems():
-      repr_info += " %s: %r\n" %(info_attribute[0], info_attribute[1])
-    return repr_info
+      str_info += " %s: %r\n" %(info_attribute[0], info_attribute[1])
+    return str_info
   
-  def __repr__(self):
+  def __str__(self):
     head = ">>> %s <<<\n" %(self.__class__.__name__)
-    repr_string = "%s\n%s" % (self.__repr_main__(), self.__repr_info__())
-    return head + repr_string
+    str_string = "%s\n%s" % (self.__str_main__(), self.__str_info__())
+    return head + str_string[:-1]
+
+  def __repr__(self):
+    return "%s(%s, %r, info)" %(
+        self.__class__.__name__,
+        self.amount,
+        self.units)
 
   @property
   def hash(self):
-    return sha1(self.__repr__()).hexdigest()
+    return sha1(self.__str__()).hexdigest()
   
   def __hash__(self):
     return self.hash

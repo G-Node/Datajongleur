@@ -8,22 +8,19 @@ from datajongleur.tests import session
 
 numbers = []
 units =[]
+time_units = ['s', 'ms', 'us', 'ns', 'ps']
 
-def setup_func():
-  time_units = ['s', 'ms', 'us', 'ns', 'ps']
-  for idx in range(2):
-    numbers.append(random.random())
-    units.append(random.choice(time_units))
+for idx in range(2):
+  numbers.append(random.random())
+  units.append(random.choice(time_units))
 
-def teardown_func():
-  pass
 
-@nose.with_setup(setup_func, teardown_func)
 def test_pq_based_InfoQuantity():
   # __new__ & __init__
   a = InfoQuantity([2,3], "mV", info={'vorname': "max"}, alter=3)
   b = InfoQuantity(1, "s", name="Max", last_name="Mustermann")
   c = InfoQuantity(2, "s")
+  assert InfoQuantity(c*c).units == "s**2"
   # Return Types (not all )
   assert a.__class__.__base__ == pq.Quantity
   #assert a.__class__.__base__ == np.ndarray

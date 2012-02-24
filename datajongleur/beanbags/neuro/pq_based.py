@@ -17,13 +17,12 @@ class TimePoint(InfoQuantity):
   _DTO = DTOTimePoint
 
   @property
-  def time(self):
-    return self 
+  def signal(self):
+    return self.view(Quantity) 
 
   @property
   def info(self):
-    return {}
-
+    return {'signal': self.signal}
 
 @addInfoQuantityDBAccess
 @addAttributesProxy(['uuid'], '_dto')
@@ -55,8 +54,12 @@ class Period(InfoQuantity, i.Interval):
     return np.diff(self)[0]
 
   @property
+  def signal(self):
+    return self.view(Quantity) 
+
+  @property
   def info(self):
-    return {}
+    return {'signal': self.signal}
 
 
 @addInfoQuantityDBAccess
@@ -113,7 +116,7 @@ class SpikeTimes(SampledTimeSeries):
 
   @property
   def info(self):
-    signal = Quantity(np.ones(len(self)))
+    signal = Quantity(np.ones(len(self), dtype=bool))
     signal_base = self.view(Quantity)
     return {
         'signal': signal,

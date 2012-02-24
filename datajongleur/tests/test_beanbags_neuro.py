@@ -25,13 +25,13 @@ np_numbers_int = np.array(numbers_int)
 def test_pq_based_TimePoint():
   tp = TimePoint(numbers[0], units[0])
   assert sa_asserts.sa_access(tp)
-  assert tp.info == {}
+  assert tp.info == {'signal': tp.signal}
 
 def test_pq_based_Period():
   p = Period(numbers[0:2], units[0])
   assert sa_asserts.sa_access(p)
   assert i_asserts.interval(p, start=numbers[0], stop=numbers[1]) 
-  assert p.info == {}
+  assert np.array_equal(p.info['signal'], p.signal)
 
 def test_pq_based_sampled_time_series():
   sts = SampledTimeSeries(
