@@ -7,6 +7,7 @@ import pdb
 import datajongleur.beanbags.interfaces as i
 from datajongleur.beanbags.pq_based import InfoQuantity
 from .models import *
+from datajongleur import bbc
 from datajongleur.utils.miscellaneous import *
 from datajongleur.utils.sa import addInfoQuantityDBAccess, dtoAttrs2Info
 
@@ -177,6 +178,17 @@ class BinnedSpikes(RegularlySampledTimeSeries):
   integer values for ``signals`` and bin-times as ``signal_base``.
   """
   _DTO = DTOBinnedSpikes
+
+beanbags = [
+    TimePoint,
+    Period,
+    SampledTimeSeries,
+    SpikeTimes,
+    RegularlySampledTimeSeries,
+    BinnedSpikes]
+
+for beanbag in beanbags:
+  bbc.register_bb(beanbag)
 
 
 if __name__ == '__main__':

@@ -183,7 +183,6 @@ class DTOBinnedSpikes(DTOIdentity):
   def checksum_json(self):
     return checksum_json(self)
 
-
 if __name__ == "__main__":
   from datajongleur.utils.sa import get_test_session
   session = get_test_session(Base)

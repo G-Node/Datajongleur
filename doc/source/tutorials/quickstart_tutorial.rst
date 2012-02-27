@@ -112,49 +112,43 @@ access ``amount`` and ``units`` of its instanz.
 Beanbags
 ========
 
+
 Thats it. Now let's juggle the beanbags.
 
 Beanbags are restricted ``InfoQuantities`` that represent standard data
 objects. This standartization affects two things:
 
-#. the structure of ``info`` is fixed
-#. access-``properties`` help to access ``info``
+**1. the structure of** ``info`` **is fixed:**
 
 * ``TimePoint``
 
   * ``info={'signal': Quantity}``
-  * ``properties:`` ``signal``
 
 * ``Period``
 
   * ``info={'signal': Quantity}``
-  * ``properties:`` ``signal``, ``start``, ``stop``, ``length``
 
 * ``SampledTimeSeries``
   
   * ``info={'signal': Quantity, 'signal_base': Quantity}``
-  * ``properties:`` ``signal``, ``start``, ``stop``, ``length``, ``signal``, ``base``,
-    ``n_sampling_points``
+
+* ``SpikeTimes``
+
+  * ``info={'signal': Quantity, 'signal_base': Quantity}``
 
 * ``RegularlySampledTimeSeries``
 
   * ``info={'signal': Quantity, 'signal_base': Quantity, 'start': Quantity,
     'stop': Quantity}``
-  * ``properties:`` ``signal``, ``base``, ``n_sampling_points``, ``start``,
-    ``stop``, ``length``, ``sampling_rate``, ``step_size``
-
-* ``SpikeTimes``
-
-  * ``info={'signal': Quantity, 'signal_base': Quantity}``
-  * ``properties:`` ``signal``, ``start``, ``stop``, ``length``, ``signal``, ``base``,
-    ``n_sampling_points``
 
 * ``BinnedSpikes``
 
   * ``info={'signal': Quantity, 'signal_base': Quantity, 'start': Quantity,
     'stop': Quantity}``
-  * ``properties:`` ``signal``, ``base``, ``n_sampling_points``, ``start``,
-    ``stop``, ``length``, ``sampling_rate``, ``step_size``
+
+**2.** *properties* **help to access different aspects of** ``info`` **:**
+
+.. image:: /_download/neuro_beanbags.png
 
 ``TimePoint``
 -------------

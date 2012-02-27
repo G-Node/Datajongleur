@@ -16,9 +16,10 @@ Unit = addDictAccessByAttrs(
 @addAttributesProxy(
     ['uuid', 'segment', 'recording_channel'], '_dto_analog_signal')
 class AnalogSignal(RegularlySampledTimeSeries):
+  _DTO = DTOAnalogSignal
   def __init__(self, *args, **kwargs):
     # real initialization takes place at `RegularlySampledTimeSeries.__newByDTO__(...)`
-    self._dto_analog_signal = DTOAnalogSignal()
+    self._dto = self._DTO()
     self.__init_finalize__()
 
   def __init_finalize__(self):
@@ -26,9 +27,9 @@ class AnalogSignal(RegularlySampledTimeSeries):
         self._dto
 
   @classmethod
-  def newByDTOAnalogSignal(cls, dto):
-    obj = cls.newByDTO(dto.dto_regularly_sampled_time_series)
-    obj._dto_analog_signal = dto
+  def newByDTO(cls, dto):
+    obj = cls.__base__.newByDTO(dto.dto_regularly_sampled_time_series)
+    obj._dto = dto
     obj.__init_finalize__()
     return obj
  
@@ -36,8 +37,8 @@ class AnalogSignal(RegularlySampledTimeSeries):
     return self.__class__.__base__.newByDTO(
         self._dto)
 
-  def getDTOAnalogSignal(self):
-    return self._dto_analog_signal
+  def getDTO(self):
+    return self._dto
 
 @addDictAccessByAttrs(['file_origin'], 'badges')
 @addAttributesProxy(['name', 'description', 'flag', 'badges'], '_dto_spike_times')

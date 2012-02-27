@@ -5,7 +5,7 @@ from sqlalchemy.ext.associationproxy import association_proxy
 from sqlalchemy.ext.declarative import declared_attr
 import uuid
 import json
-from datajongleur import Base, DBSession
+from datajongleur import Base
 from datajongleur.utils.sa import NumpyType, UUID, UUIDMixin
 PREFIX = "beanbag_"
 from datajongleur.addendum.models import Addendum, AddendumBadgeMap
