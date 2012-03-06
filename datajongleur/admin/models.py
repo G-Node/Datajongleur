@@ -36,7 +36,7 @@ class BeanbagContainer(Base):
       "DTOIdentity",
       secondary=container_identities_map_table,
       backref=orm.backref('containers'),
-      )
+      order_by="DTOIdentity.ctime")
 
   def __repr__(self):
     return "Container(%r)" %(self.name)

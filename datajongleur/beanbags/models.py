@@ -17,7 +17,6 @@ def catchAttributeError(func):
     try:
       return func(*args, **kwargs)
     except AttributeError:
-      print "in Exception"
       "In case that there is no ``Addendum`` specified, yet."
       return None
   return dec
