@@ -1,3 +1,5 @@
+import numpy as np
+
 def unspec_args2info_dict(args, kwargs):
   """
   Turns `args` and `kwargs` into one dictionary `info` by the following rule:
@@ -221,3 +223,100 @@ class ListView(list):
   def __eq__(self, other):
     return self._data == other._data
 
+class NPAdapter(np.ndarray):
+  def __new__(cls, signal, units):
+    """
+    NPAdapter is instanciated with `signal` and `units` but ignores `units`.
+    """
+    obj = np.array(signal)
+    return obj
+
+def adapt_numerical_functions(cls):
+  def generateAdjustedFunction(functionName):
+    def foo(self, *args, **kwargs):
+      function = getattr(self.signal.__class__, functionName)
+      return function(self.signal, *args, **kwargs)
+    return foo
+  functionNames = [
+      '_get_units',
+      '_set_units',
+      'rescale',
+      'ptp',
+      'clip',
+      'copy',
+      'compress',
+      'conj',
+      'cumprod',
+      'cumsum',
+      'diagonal',
+      'dot',
+      'flatten',
+      'getfield',
+      'round',
+      'trace',
+      'max',
+      'mean',
+      'min',
+      'newbyteorder',
+      'prod',
+      'ravel',
+      'reshape',
+      'resize',
+      'round',
+      'std',
+      'sum',
+      'trace',
+      'transpose',
+      'var',
+      '__getitem__',
+      '__getslice__',
+      '__abs__',
+      #
+      '__add__',
+      '__div__',
+      '__divmod__',
+      '__floordiv__'
+      '__mod__',
+      '__mul__',
+      '__pow__',
+      '__sub__',
+      #
+      '__radd__',
+      '__div__',
+      '__divmod__',
+      '__rfloordiv__',
+      '__rmod__',
+      '__imul__',
+      '__rmul__',
+      '__rpow__',
+      '__rsub__',
+      ]
+  for functionName in functionNames:
+    foo = generateAdjustedFunction(functionName)
+    setattr(cls, functionName, foo)
+  return cls
+
+@adapt_numerical_functions
+class Numeric(object):
+  def __init__(self, signal):
+    self.set_signal(signal)
+
+  def set_signal(self, signal):
+    self.signal = signal
+    if hasattr(self.signal, '_dimensionality'):
+      self._dimensionality = self.signal._dimensionality
+      self.dimensionality = self.signal.dimensionality
+
+  def __array__(self):
+    """
+    Provide an 'array' view or copy over numeric.samples
+
+    Parameters
+    ----------
+    dtype: type, optional
+      If provided, passed to .signal.__array__() call
+
+    *args to mimique numpy.ndarray.__array__ behavior which relies
+    on the actual number of arguments
+    """
+    return self.signal

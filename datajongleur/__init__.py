@@ -1,3 +1,4 @@
+import sys
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import scoped_session, sessionmaker
 from sqlalchemy import engine_from_config
@@ -9,6 +10,21 @@ Base = declarative_base()
 DBSession = scoped_session(sessionmaker())
 cj = ConfigJongleur()
 bbc = BBConverter()
+
+# Setting CurrentNumeric to Quantity
+if cj.config['types.numeric'].lower() == 'quantity':
+  try:
+    from quantities import Quantity as CurrentNumeric
+  except ImportError, msg:
+    print msg
+    print "trying `numpy.ndarray` instead"
+    cj.config['types.numeric'] = 'numpy'
+if cj.config['types.numeric'].lower() in ['numpy', 'ndarray', 'numpy.ndarray']:
+  try:
+    from datajongleur.utils.miscellaneous import NPAdapter as CurrentNumeric
+  except ImportError, msg:
+    print msg
+    sys.exit(1)
 
 def initialize_sql(engine):
   DBSession.configure(bind=engine)

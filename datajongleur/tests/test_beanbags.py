@@ -3,7 +3,7 @@ import quantities as pq
 import numpy as np
 import random
 
-from datajongleur.beanbags.neuro.pq_based import *
+from datajongleur.beanbags.models import *
 from datajongleur.tests import session
 
 numbers = []
@@ -15,17 +15,13 @@ for idx in range(2):
   units.append(random.choice(time_units))
 
 
-def test_pq_based_InfoQuantity():
+def test_InfoQuantity():
   # __new__ & __init__
   a = InfoQuantity([2,3], "mV", info={'vorname': "max"}, alter=3)
   b = InfoQuantity(1, "s", name="Max", last_name="Mustermann")
   c = InfoQuantity(2, "s")
   assert InfoQuantity(c*c).units == "s**2"
-  # Return Types (not all )
-  assert a.__class__.__base__ == pq.Quantity
-  #assert a.__class__.__base__ == np.ndarray
-  assert type(a + a) == a.__class__.__base__
-  assert type(a.max()) == a.__class__.__base__
-  assert type(4 * a) == a.__class__.__base__
-  assert type(a * 4) == a.__class__.__base__
-  # ... is here any standardiced procedure?
+  assert type(a + a) == type(a.signal)
+  assert type(a.max()) == type(a.signal)
+  assert type(4 * a) == type(4* a.signal) 
+  assert type(a * 4) == type(a.signal * 4)

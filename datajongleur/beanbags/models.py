@@ -1,3 +1,5 @@
+import numpy as np
+
 import datetime as dt
 import sqlalchemy as sa
 import sqlalchemy.orm as orm
@@ -5,19 +7,18 @@ from sqlalchemy.ext.associationproxy import association_proxy
 from sqlalchemy.ext.declarative import declared_attr
 import uuid
 import json
-from datajongleur import Base
+from datajongleur import Base, CurrentNumeric
 from datajongleur.utils.sa import NumpyType, UUID, UUIDMixin
 PREFIX = "beanbag_"
 from datajongleur.addendum.models import Addendum, AddendumBadgeMap
 from datajongleur.utils.miscellaneous import kwargs2info_dict
-
+from datajongleur.utils.miscellaneous import Numeric
 
 def catchAttributeError(func):
   def dec(*args, **kwargs):
     try:
       return func(*args, **kwargs)
     except AttributeError:
-      print "in Exception"
       "In case that there is no ``Addendum`` specified, yet."
       return None
   return dec
@@ -102,20 +103,69 @@ class DTOQuantity(DTOIdentity):
   units = sa.Column('units', sa.String)
 
 
-class DTOInfoQuantity(DTOIdentity):
+class InfoQuantity(DTOIdentity, Numeric):
   __tablename__ = PREFIX + 'info_quantities'
   __mapper_args__ = {'polymorphic_identity': 'InfoQuantity'}
   uuid = sa.Column(
       sa.ForeignKey(PREFIX + 'identities.uuid'),
       primary_key=True)
-  amount = sa.Column('amount', NumpyType)
-  units = sa.Column('units', sa.String)
+  _amount = sa.Column('amount', NumpyType)
+  _units = sa.Column('units', sa.String)
   info = sa.Column('info', sa.PickleType)
 
-  def __init__(self, amount, units, **kwargs):
-    self.amount = amount
-    self.units = units
+  def __init__(self, amount, units='', **kwargs):
+    if type(amount)==type(self):
+      self._amount = amount.amount
+      self._units = amount.units
+      kwargs.update(amount.info)
+    elif type(amount)==CurrentNumeric: # Quantity - if installed
+      signal = amount
+      self._amount = signal.view(np.ndarray)
+      if hasattr(signal, 'dimensionality'):
+        self._units = signal.dimensionality.string
+    else:
+      self._amount = np.array(amount)
+      self._units = units
+    self.set_signal(CurrentNumeric(self.amount, self.units))
     self.info = kwargs2info_dict(kwargs)
+
+  @property
+  def amount(self):
+    return self._amount
+
+  @property
+  def units(self):
+    return self._units
+
+  def __str_main__ (self):
+    """ Representation of the inherited Quantity-part"""
+    return "%r\n" % self.signal
+    
+  def __str_info__ (self):
+    if len(self.info.keys()) == 0:
+      return ""
+    str_info = "Info-Attributes:\n"
+    for info_attribute in self.info.iteritems():
+      str_info += " %s: %r\n" %(info_attribute[0], info_attribute[1])
+    return str_info
+  
+  def __str__(self):
+    head = ">>> %s <<<\n" %(self.__class__.__name__)
+    str_string = "%s\n%s" % (self.__str_main__(), self.__str_info__())
+    return head + str_string[:-1]
+
+  def __repr__(self):
+    return "%s(%s, %r, info)" %(
+        self.__class__.__name__,
+        self.amount,
+        self.units)
+
+  @property
+  def hash(self):
+    return sha1(self.__str__()).hexdigest()
+  
+  def __hash__(self):
+    return self.hash
 
 
 class DTOIDPoint(DTOIdentity):
