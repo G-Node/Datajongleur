@@ -11,21 +11,6 @@ DBSession = scoped_session(sessionmaker())
 cj = ConfigJongleur()
 bbc = BBConverter()
 
-# Setting CurrentNumeric to Quantity
-if cj.config['types.numeric'].lower() == 'quantity':
-  try:
-    from quantities import Quantity as CurrentNumeric
-  except ImportError, msg:
-    print msg
-    print "trying `numpy.ndarray` instead"
-    cj.config['types.numeric'] = 'numpy'
-if cj.config['types.numeric'].lower() in ['numpy', 'ndarray', 'numpy.ndarray']:
-  try:
-    from datajongleur.utils.miscellaneous import NPAdapter as CurrentNumeric
-  except ImportError, msg:
-    print msg
-    sys.exit(1)
-
 def initialize_sql(engine):
   DBSession.configure(bind=engine)
   Base.metadata.bind = engine

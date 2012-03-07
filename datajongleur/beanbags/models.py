@@ -7,12 +7,12 @@ from sqlalchemy.ext.associationproxy import association_proxy
 from sqlalchemy.ext.declarative import declared_attr
 import uuid
 import json
-from datajongleur import Base, CurrentNumeric
+from datajongleur import Base
 from datajongleur.utils.sa import NumpyType, UUID, UUIDMixin
 PREFIX = "beanbag_"
 from datajongleur.addendum.models import Addendum, AddendumBadgeMap
 from datajongleur.utils.miscellaneous import kwargs2info_dict
-from datajongleur.utils.miscellaneous import Numeric
+from datajongleur.utils.miscellaneous import NumericWithUnits
 
 def catchAttributeError(func):
   def dec(*args, **kwargs):
@@ -103,7 +103,7 @@ class DTOQuantity(DTOIdentity):
   units = sa.Column('units', sa.String)
 
 
-class InfoQuantity(DTOIdentity, Numeric):
+class InfoQuantity(DTOIdentity, NumericWithUnits):
   __tablename__ = PREFIX + 'info_quantities'
   __mapper_args__ = {'polymorphic_identity': 'InfoQuantity'}
   uuid = sa.Column(
@@ -113,29 +113,9 @@ class InfoQuantity(DTOIdentity, Numeric):
   _units = sa.Column('units', sa.String)
   info = sa.Column('info', sa.PickleType)
 
-  def __init__(self, amount, units='', **kwargs):
-    if type(amount)==type(self):
-      self._amount = amount.amount
-      self._units = amount.units
-      kwargs.update(amount.info)
-    elif type(amount)==CurrentNumeric: # Quantity - if installed
-      signal = amount
-      self._amount = signal.view(np.ndarray)
-      if hasattr(signal, 'dimensionality'):
-        self._units = signal.dimensionality.string
-    else:
-      self._amount = np.array(amount)
-      self._units = units
-    self.set_signal(CurrentNumeric(self.amount, self.units))
+  def __init__(self, amount, units=None, **kwargs):
+    NumericWithUnits.__init__(self, amount, units)
     self.info = kwargs2info_dict(kwargs)
-
-  @property
-  def amount(self):
-    return self._amount
-
-  @property
-  def units(self):
-    return self._units
 
   def __str_main__ (self):
     """ Representation of the inherited Quantity-part"""

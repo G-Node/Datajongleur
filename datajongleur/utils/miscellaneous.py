@@ -1,4 +1,8 @@
 import numpy as np
+try:
+  from quantities import Quantity
+except ImportError:
+  Quantity = None
 
 def unspec_args2info_dict(args, kwargs):
   """
@@ -297,15 +301,37 @@ def adapt_numerical_functions(cls):
   return cls
 
 @adapt_numerical_functions
-class Numeric(object):
-  def __init__(self, signal):
-    self.set_signal(signal)
-
-  def set_signal(self, signal):
-    self.signal = signal
-    if hasattr(self.signal, '_dimensionality'):
+class NumericWithUnits(object):
+  def __init__(self, amount, units=None):
+    if type(amount)==type(self):
+      assert units==None or units==amount.units
+      self._amount = amount.amount
+      self._units = amount.units
+    elif type(amount)==Quantity: # Quantity - if installed, otherwise None
+      assert units==None or units==amount.dimensionality.string
+      self._amount= amount.view(np.ndarray)
+      self._units = amount.dimensionality.string
+    else:
+      self._amount = np.array(amount)
+      self._units = units
+    if type(self.signal) == Quantity:
       self._dimensionality = self.signal._dimensionality
       self.dimensionality = self.signal.dimensionality
+  
+  @property
+  def signal(self):
+    if Quantity:
+      return Quantity(self._amount, self._units)
+    else:
+      return self._amount
+
+  @property
+  def amount(self):
+    return self._amount
+
+  @property
+  def units(self):
+    return self._units
 
   def __array__(self):
     """
@@ -320,3 +346,10 @@ class Numeric(object):
     on the actual number of arguments
     """
     return self.signal
+
+  def __array_wrap__(self, out_arr, context=None):
+    my_type = type(context[0](self.signal,out_arr))
+    if hasattr(my_type, 'dimensionality'):
+      return my_type(out_arr, self.units)
+    else:
+      return out_arr
