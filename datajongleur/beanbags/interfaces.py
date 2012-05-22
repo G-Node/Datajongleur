@@ -17,9 +17,9 @@ class Quantity(Value):
 
   # Required methods by general ``quantity``
   # ----------------------------------------
-  def getAmount(self):
+  def amount(self):
     raise NotImplementedError
-  def getUnits(self):
+  def units(self):
     raise NotImplementedError
   # Arithmetics:
   def add(self, other): # +
@@ -97,11 +97,11 @@ class DTOInfoQuantity (Quantity):
 
 
 class Interval(Value):
-  def getStart(self):
+  def start(self):
     raise NotImplementedError
-  def getStop(self):
+  def stop(self):
     raise NotImplementedError
-  def getLength(self):
+  def length(self):
     raise NotImplementedError
 
 

@@ -317,6 +317,7 @@ class NumericWithUnits(object):
     if type(self.signal) == Quantity:
       self._dimensionality = self.signal._dimensionality
       self.dimensionality = self.signal.dimensionality
+    self._amount.setflags(write='False')
   
   @property
   def signal(self):
@@ -332,6 +333,12 @@ class NumericWithUnits(object):
   @property
   def units(self):
     return self._units
+
+  def __repr__(self):
+    return "%s(%r, %r)" %(
+        self.__class__.__name__,
+        self.amount,
+        self.units)
 
   def __array__(self):
     """

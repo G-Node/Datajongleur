@@ -25,6 +25,7 @@ class TimePoint(InfoQuantity):
   def info(self):
     return {'signal': self.signal}
 
+
 @addInfoQuantityDBAccess
 @addAttributesProxy(['uuid'], '_dto')
 class Period(InfoQuantity, i.Interval):

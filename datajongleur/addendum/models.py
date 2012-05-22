@@ -59,7 +59,7 @@ class Addendum(UUIDMixin, Base):
       self.badges = badges
 
   identity = orm.relationship(
-      "DTOIdentity",
+      "Identity",
       backref=orm.backref('addendum', uselist=False)
       )
 

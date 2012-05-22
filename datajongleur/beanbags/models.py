@@ -7,12 +7,14 @@ from sqlalchemy.ext.associationproxy import association_proxy
 from sqlalchemy.ext.declarative import declared_attr
 import uuid
 import json
-from datajongleur import Base
+from datajongleur import Base, DBSession
 from datajongleur.utils.sa import NumpyType, UUID, UUIDMixin
 PREFIX = "beanbag_"
 from datajongleur.addendum.models import Addendum, AddendumBadgeMap
 from datajongleur.utils.miscellaneous import kwargs2info_dict
 from datajongleur.utils.miscellaneous import NumericWithUnits
+from datajongleur.utils.sa import addInfoQuantityDBAccess
+import datajongleur.beanbags.nwu as nwu
 
 def catchAttributeError(func):
   def dec(*args, **kwargs):
@@ -27,7 +29,7 @@ def catchAttributeError(func):
 # Identity
 ##########
 
-class DTOIdentity(UUIDMixin, Base):
+class Identity(UUIDMixin, Base):
   __tablename__ = PREFIX + 'identities'
   mtime = sa.Column(
       'mtime', 
@@ -37,8 +39,8 @@ class DTOIdentity(UUIDMixin, Base):
       'ctime', 
       sa.DateTime,
       default=dt.datetime.now())
-  dto_type = sa.Column(sa.String, nullable=False)
-  __mapper_args__ = {'polymorphic_on': dto_type}
+  _dto_type = sa.Column('dto_type', sa.String, nullable=False)
+  __mapper_args__ = {'polymorphic_on': _dto_type}
 
   _name = association_proxy('addendum', 'name',
       creator=lambda name: Addendum(
@@ -88,22 +90,41 @@ class DTOIdentity(UUIDMixin, Base):
   @flag.setter
   def flag(self, value):
     self._flag = value
+  
+  @classmethod
+  def newByUUID(cls, uuid):
+    if not hasattr(cls, "session"):
+      cls.session = DBSession()
+    dto = cls.session.query(cls).filter(
+        getattr(cls, 'uuid') == uuid).first()
+    return dto
+
+  @classmethod
+  def load(cls, uuid):
+    return cls.newByUUID(uuid)
+
+  def save(self):
+    if not hasattr(self, "session"):
+      self.__class__.session = DBSession()
+    uuid = self.uuid
+    self.session.add (self)
+    self.session.commit ()
 
 ##########
 # Beanbags
 ##########
 
-class DTOQuantity(DTOIdentity):
+class DTOQuantity(Identity, NumericWithUnits):
   __tablename__ = PREFIX + 'quantities'
   __mapper_args__ = {'polymorphic_identity': 'Quantity'}
   uuid = sa.Column(
       sa.ForeignKey(PREFIX + 'identities.uuid'),
       primary_key=True)
-  amount = sa.Column('amount', NumpyType)
-  units = sa.Column('units', sa.String)
+  _amount = sa.Column('amount', NumpyType)
+  _units = sa.Column('units', sa.String)
 
 
-class InfoQuantity(DTOIdentity, NumericWithUnits):
+class InfoQuantity(nwu.InfoQuantity, Identity):
   __tablename__ = PREFIX + 'info_quantities'
   __mapper_args__ = {'polymorphic_identity': 'InfoQuantity'}
   uuid = sa.Column(
@@ -113,42 +134,8 @@ class InfoQuantity(DTOIdentity, NumericWithUnits):
   _units = sa.Column('units', sa.String)
   info = sa.Column('info', sa.PickleType)
 
-  def __init__(self, amount, units=None, **kwargs):
-    NumericWithUnits.__init__(self, amount, units)
-    self.info = kwargs2info_dict(kwargs)
 
-  def __str_main__ (self):
-    """ Representation of the inherited Quantity-part"""
-    return "%r\n" % self.signal
-    
-  def __str_info__ (self):
-    if len(self.info.keys()) == 0:
-      return ""
-    str_info = "Info-Attributes:\n"
-    for info_attribute in self.info.iteritems():
-      str_info += " %s: %r\n" %(info_attribute[0], info_attribute[1])
-    return str_info
-  
-  def __str__(self):
-    head = ">>> %s <<<\n" %(self.__class__.__name__)
-    str_string = "%s\n%s" % (self.__str_main__(), self.__str_info__())
-    return head + str_string[:-1]
-
-  def __repr__(self):
-    return "%s(%s, %r, info)" %(
-        self.__class__.__name__,
-        self.amount,
-        self.units)
-
-  @property
-  def hash(self):
-    return sha1(self.__str__()).hexdigest()
-  
-  def __hash__(self):
-    return self.hash
-
-
-class DTOIDPoint(DTOIdentity):
+class DTOIDPoint(Identity):
   __tablename__ = PREFIX + 'id_points'
   __mapper_args__ = {'polymorphic_identity': 'IDPoint'}
   uuid = sa.Column(
@@ -158,7 +145,7 @@ class DTOIDPoint(DTOIdentity):
   units = sa.Column('units', sa.String)
 
 
-class DTOIIDPoint(DTOIdentity):
+class DTOIIDPoint(Identity):
   __tablename__ = PREFIX + 'iid_points'
   __mapper_args__ = {'polymorphic_identity': 'IIDPoint'}
   uuid = sa.Column(
@@ -169,7 +156,7 @@ class DTOIIDPoint(DTOIdentity):
   units = sa.Column('units', sa.String)
 
 
-class DTOIIIDPoint(DTOIdentity):
+class DTOIIIDPoint(Identity):
   __tablename__ = PREFIX + 'iiid_points'
   __mapper_args__ = {'polymorphic_identity': 'IIIDPoint'}
   uuid = sa.Column(
@@ -181,6 +168,80 @@ class DTOIIIDPoint(DTOIdentity):
   units = sa.Column('units', sa.String)
 
 
+class TimePoint(nwu.TimePoint, Identity):
+  __tablename__ =  PREFIX + 'time_points'
+  __mapper_args__ = {'polymorphic_identity': 'TimePoint'}
+  uuid = sa.Column(
+      sa.ForeignKey(PREFIX + 'identities.uuid'),
+      primary_key=True)
+  _amount = sa.Column('amount', sa.Float)
+  _units = sa.Column('units', sa.String)
+
+  @orm.reconstructor
+  def init_on_load(self):
+    NumericWithUnits.__init__(self, self._amount, self._units)
+
+
+class Period(nwu.Period, Identity):
+  __tablename__ = PREFIX + 'periods'
+  __mapper_args__ = {'polymorphic_identity': 'Period'}
+  uuid = sa.Column(
+      sa.ForeignKey(PREFIX + 'identities.uuid'),
+      primary_key=True)
+  _start = sa.Column('start', sa.Float)
+  _stop = sa.Column('stop', sa.Float)
+  _units = sa.Column('units', sa.String)
+
+  @orm.reconstructor
+  def init_on_load(self):
+    NumericWithUnits.__init__(self, [self._start, self._stop], self._units)
+
+
+class SampledSignal(nwu.SampledSignal, Identity):
+  __tablename__ = PREFIX + 'regularly_sampled_signal'
+  __mapper_args__ = {'polymorphic_identity': 'SampledSignal'}
+  uuid = sa.Column(
+      sa.ForeignKey(PREFIX + 'identities.uuid'),
+      primary_key=True)
+  _amount = sa.Column('amount', NumpyType)
+  _units = sa.Column('units', sa.String)
+  _signal_base_amount = sa.Column('signal_base_amount', NumpyType)
+  _signal_base_units = sa.Column('signal_base_units', sa.String)
+
+  def __init__(self, *args, **kwargs):
+    nwu.SampledSignal.__init__(self, *args, **kwargs)
+    self._signal_base_amount = self.signal_base._amount
+    self._signal_base_units = self.signal_base._units
+
+  @orm.reconstructor
+  def init_on_load(self):
+    NumericWithUnits.__init__(self, self._amount, self._units)
+    self.signal_base = NumericWithUnits(
+        self._signal_base_amount, self._signal_base_units)
+
+
+class RegularlySampledSignal(nwu.RegularlySampledSignal, Identity):
+  __tablename__ = PREFIX + 'regularly_sampled_time_series'
+  __mapper_args__ = {'polymorphic_identity': 'RegularlySampledTimeSeries'}
+  uuid = sa.Column(
+      sa.ForeignKey(PREFIX + 'identities.uuid'),
+      primary_key=True)
+  amount = sa.Column('amount', NumpyType)
+  units = sa.Column('units', sa.String)
+  start = sa.Column('start', sa.Float)
+  stop = sa.Column('stop', sa.Float)
+  time_units = sa.Column('time_units', sa.String)
+
+  def checksum_json(self):
+    return checksum_json(self)
+
+  
+
 def initialize_sql(engine):
   Base.metadata.bind = engine
   Base.metadata.create_all(engine)
+
+
+
+if __name__ == '__main__':
+  pass
