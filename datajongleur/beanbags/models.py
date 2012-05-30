@@ -10,7 +10,7 @@ import json
 from datajongleur import Base, DBSession
 from datajongleur.utils.sa import NumpyType, UUID, UUIDMixin
 PREFIX = "beanbag_"
-from datajongleur.addendum.models import Addendum, AddendumBadgeMap
+#from datajongleur.addendum.models import Addendum, AddendumBadgeMap
 from datajongleur.utils.miscellaneous import kwargs2info_dict
 from datajongleur.utils.miscellaneous import NumericWithUnits
 from datajongleur.utils.sa import addInfoQuantityDBAccess
