@@ -1,9 +1,4 @@
 import numpy as np
-try:
-  from quantities import Quantity
-except ImportError:
-  Quantity = None
-
 def unspec_args2info_dict(args, kwargs):
   """
   Turns `args` and `kwargs` into one dictionary `info` by the following rule:
@@ -174,67 +169,6 @@ def change_return_type(result_cls):
     return cls
   return decorator_func
 
-class ListView(list):
-  def __init__(self, raw_list, raw2new, new2raw):
-    self._data = raw_list
-    self.converters = {'raw2new': raw2new,
-        'new2raw': new2raw}
-
-  def __repr__(self):
-    repr_list = [self.converters['raw2new'](item) for item in self._data]
-    repr_str = "["
-    for element in repr_list:
-      repr_str += element.__repr__() + ",\n "
-    if repr_str[-3:] == ",\n ":
-      repr_str = repr_str[:-3]
-    repr_str = repr_str + "]"
-    #repr_str = repr_str[:-3] + "]"
-    return repr_str
-
-  def append(self, item):
-    self._data.append(self.converters['new2raw'](item))
-
-  def pop(self, index):
-    self._data.pop(index)
-
-  def __getitem__(self, index):
-    return self.converters['raw2new'](self._data[index])
-
-  def __setitem__(self, key, value):
-    self._data.__setitem__(key, self.converters['new2raw'](value))
-
-  def __delitem__(self, key):
-    return self._data.__delitem__(key)
-
-  def __getslice__(self, i, j):
-    return ListView(self._data.__getslice__(i,j), **self.converters)
-
-  def __contains__(self, item):
-    return self._data.__contains__(self.converters['new2raw'](item))
-
-  def __add__(self, other_list_view):
-    assert self.converters == other_list_view.converters
-    return ListView(
-        self._data + other_list_view._data,
-        **self.converters)
-
-  def __len__(self):
-    return len(self._data)
-
-  def __iter__(self):
-    return iter([self.converters['raw2new'](item) for item in self._data])
-
-  def __eq__(self, other):
-    return self._data == other._data
-
-class NPAdapter(np.ndarray):
-  def __new__(cls, signal, units):
-    """
-    NPAdapter is instanciated with `signal` and `units` but ignores `units`.
-    """
-    obj = np.array(signal)
-    return obj
-
 def adapt_numerical_functions(cls):
   def generateAdjustedFunction(functionName):
     def foo(self, *args, **kwargs):
@@ -300,56 +234,55 @@ def adapt_numerical_functions(cls):
     setattr(cls, functionName, foo)
   return cls
 
-@adapt_numerical_functions
-class NumericWithUnits(object):
-  def __init__(self, amount, units=None):
-    if type(amount)==type(self):
-      assert units==None or units==amount.units
-      self._amount = amount.amount
-      self._units = amount.units
-    elif type(amount)==Quantity: # Quantity - if installed, otherwise None
-      assert units==None or units==amount.dimensionality.string
-      self._amount= amount.view(np.ndarray)
-      self._units = amount.dimensionality.string
-    else:
-      self._amount = np.array(amount)
-      self._units = units
-    if type(self.signal) == Quantity:
-      self._dimensionality = self.signal._dimensionality
-      self.dimensionality = self.signal.dimensionality
-  
-  @property
-  def signal(self):
-    if Quantity:
-      return Quantity(self._amount, self._units)
-    else:
-      return self._amount
+class ListView(list):
+  def __init__(self, raw_list, raw2new, new2raw):
+    self._data = raw_list
+    self.converters = {'raw2new': raw2new,
+        'new2raw': new2raw}
 
-  @property
-  def amount(self):
-    return self._amount
+  def __repr__(self):
+    repr_list = [self.converters['raw2new'](item) for item in self._data]
+    repr_str = "["
+    for element in repr_list:
+      repr_str += element.__repr__() + ",\n "
+    if repr_str[-3:] == ",\n ":
+      repr_str = repr_str[:-3]
+    repr_str = repr_str + "]"
+    #repr_str = repr_str[:-3] + "]"
+    return repr_str
 
-  @property
-  def units(self):
-    return self._units
+  def append(self, item):
+    self._data.append(self.converters['new2raw'](item))
 
-  def __array__(self):
-    """
-    Provide an 'array' view or copy over numeric.samples
+  def pop(self, index):
+    self._data.pop(index)
 
-    Parameters
-    ----------
-    dtype: type, optional
-      If provided, passed to .signal.__array__() call
+  def __getitem__(self, index):
+    return self.converters['raw2new'](self._data[index])
 
-    *args to mimique numpy.ndarray.__array__ behavior which relies
-    on the actual number of arguments
-    """
-    return self.signal
+  def __setitem__(self, key, value):
+    self._data.__setitem__(key, self.converters['new2raw'](value))
 
-  def __array_wrap__(self, out_arr, context=None):
-    my_type = type(context[0](self.signal,out_arr))
-    if hasattr(my_type, 'dimensionality'):
-      return my_type(out_arr, self.units)
-    else:
-      return out_arr
+  def __delitem__(self, key):
+    return self._data.__delitem__(key)
+
+  def __getslice__(self, i, j):
+    return ListView(self._data.__getslice__(i,j), **self.converters)
+
+  def __contains__(self, item):
+    return self._data.__contains__(self.converters['new2raw'](item))
+
+  def __add__(self, other_list_view):
+    assert self.converters == other_list_view.converters
+    return ListView(
+        self._data + other_list_view._data,
+        **self.converters)
+
+  def __len__(self):
+    return len(self._data)
+
+  def __iter__(self):
+    return iter([self.converters['raw2new'](item) for item in self._data])
+
+  def __eq__(self, other):
+    return self._data == other._data

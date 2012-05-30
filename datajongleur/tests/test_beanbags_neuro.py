@@ -1,10 +1,11 @@
 import nose
 import random
-
-from datajongleur.beanbags.neuro.pq_based import *
-from datajongleur.tests import session
-import datajongleur.tests.i_asserts as i_asserts
+import datajongleur as dj
+from datajongleur.core.neuro.models import *
+import datajongleur.tests.interface_asserts as i_asserts
 import datajongleur.tests.sa_asserts as sa_asserts
+from datajongleur.tests.utils import session
+import numpy as np
 
 numbers = []
 numbers2 = []
@@ -27,11 +28,12 @@ def test_pq_based_TimePoint():
   assert sa_asserts.sa_access(tp)
   assert tp.info == {'signal': tp.signal}
 
-def test_pq_based_Period():
-  p = Period(numbers[0:2], units[0])
+def test_pq_based_Interval():
+  p = Interval(numbers[0:2], units[0])
   assert sa_asserts.sa_access(p)
   assert i_asserts.interval(p, start=numbers[0], stop=numbers[1]) 
   assert np.array_equal(p.info['signal'], p.signal)
+"""
 
 def test_pq_based_sampled_time_series():
   sts = SampledTimeSeries(
@@ -77,3 +79,4 @@ def test_pq_based_binned_spikes():
   assert i_asserts.interval(bs, start=numbers2[0], stop=numbers2[1]) 
   assert i_asserts.sampled_signal(bs)
   assert i_asserts.quantity(bs, (np_numbers_int ** 2).max())
+"""

@@ -3,10 +3,9 @@ import sqlalchemy.orm as orm
 from sqlalchemy.ext.associationproxy import association_proxy
 from sqlalchemy.orm.collections import attribute_mapped_collection
 import sqlamp
-import uuid
 from datajongleur import Base, DBSession
 from datajongleur import declarative_base
-from datajongleur.beanbags.models import PREFIX as BB_PREFIX
+from datajongleur.core.models import PREFIX as BB_PREFIX
 from datajongleur.utils.sa import UUID, UUIDMixin
 
 PREFIX = "addendum_"
@@ -59,7 +58,7 @@ class Addendum(UUIDMixin, Base):
       self.badges = badges
 
   identity = orm.relationship(
-      "DTOIdentity",
+      "Identity",
       backref=orm.backref('addendum', uselist=False)
       )
 

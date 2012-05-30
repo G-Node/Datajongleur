@@ -33,7 +33,7 @@ class BeanbagContainer(Base):
     self.name = name
 
   beanbags = orm.relationship(
-      "DTOIdentity",
+      "Identity",
       secondary=container_identities_map_table,
       backref=orm.backref('containers'),
       )

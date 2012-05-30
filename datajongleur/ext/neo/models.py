@@ -22,7 +22,7 @@ recording_channel_group_recording_channel_maps = sa.Table(
       primary_key=True),
     )
 
-class Block(DTOIdentity):
+class Block(Identity):
   __tablename__ = PREFIX + 'blocks'
   uuid = sa.Column(
       sa.ForeignKey(BB_PREFIX + 'identities.uuid'),
@@ -31,10 +31,10 @@ class Block(DTOIdentity):
   file_datetime =  sa.Column('file_datetime', sa.DateTime)
   index = sa.Column('index', sa.Integer)
   __mapper_args__ = {'polymorphic_identity': 'Block',
-      'inherit_condition': (uuid==DTOIdentity.uuid)
+      'inherit_condition': (uuid==Identity.uuid)
       }
 
-class Segment(DTOIdentity):
+class Segment(Identity):
   __tablename__ = PREFIX + 'segments'
   uuid = sa.Column(
       sa.ForeignKey(BB_PREFIX + 'identities.uuid'),
@@ -47,7 +47,7 @@ class Segment(DTOIdentity):
   file_datetime =  sa.Column('file_datetime', sa.DateTime)
   index = sa.Column('index', sa.Integer)
   __mapper_args__ = {'polymorphic_identity': 'Segment',
-      'inherit_condition': (uuid==DTOIdentity.uuid)
+      'inherit_condition': (uuid==Identity.uuid)
       }
   
   # Properties:
@@ -60,7 +60,7 @@ class Segment(DTOIdentity):
       backref='segments'
       )
 
-class RecordingChannelGroup(DTOIdentity):
+class RecordingChannelGroup(Identity):
   __tablename__ = PREFIX + 'recording_channel_groups'
   uuid = sa.Column(
       sa.ForeignKey(BB_PREFIX + 'identities.uuid'),
@@ -72,7 +72,7 @@ class RecordingChannelGroup(DTOIdentity):
   channel_names = sa.Column(NumpyType)
   channel_indexes = sa.Column(NumpyType)
   __mapper_args__ = {'polymorphic_identity': 'RecordingChannelGroup',
-      'inherit_condition': (uuid==DTOIdentity.uuid)}
+      'inherit_condition': (uuid==Identity.uuid)}
   
   block = orm.relationship(
       "Block",
@@ -84,7 +84,7 @@ class RecordingChannelGroup(DTOIdentity):
       )
 
 
-class RecordingChannel(DTOIdentity):
+class RecordingChannel(Identity):
   __tablename__ = PREFIX + 'recording_channels'
   uuid = sa.Column(
       sa.ForeignKey(BB_PREFIX + 'identities.uuid'),
@@ -97,7 +97,7 @@ class RecordingChannel(DTOIdentity):
       )
   __mapper_args__ = {
       'polymorphic_identity': 'RecordingChannel',
-      'inherit_condition': (uuid==DTOIdentity.uuid)
+      'inherit_condition': (uuid==Identity.uuid)
       }
   # Properties:
   coordinate = orm.relationship(
@@ -113,7 +113,7 @@ class RecordingChannel(DTOIdentity):
       )
 
 
-class DTOAnalogSignal(DTOIdentity):
+class DTOAnalogSignal(Identity):
   __tablename__ = PREFIX + 'analog_signals'
   uuid = sa.Column(
       sa.ForeignKey(BB_PREFIX + 'identities.uuid'),
@@ -126,7 +126,7 @@ class DTOAnalogSignal(DTOIdentity):
       sa.ForeignKey( PREFIX + 'segments.uuid'),
       )
   __mapper_args__ = {'polymorphic_identity': 'AnalogSignal',
-      'inherit_condition': (uuid==DTOIdentity.uuid)
+      'inherit_condition': (uuid==Identity.uuid)
       }
   # neuro.beanbags:
   regularly_sampled_time_series_uuid = sa.Column(
@@ -153,7 +153,7 @@ class DTOAnalogSignal(DTOIdentity):
       )
 
 
-class DTOIrregularlySampledSignal(DTOIdentity):
+class DTOIrregularlySampledSignal(Identity):
   __tablename__ = PREFIX + 'irregularly_sampled_signals_dtos'
   uuid = sa.Column(
       sa.ForeignKey(BB_PREFIX + 'identities.uuid'),
@@ -170,7 +170,7 @@ class DTOIrregularlySampledSignal(DTOIdentity):
         'sampled_time_series_uuid',
         sa.ForeignKey(NEURO_PREFIX + 'sampled_time_series.uuid'))
   __mapper_args__ = {'polymorphic_identity': 'IrregularlySampledSignal',
-      'inherit_condition': (uuid==DTOIdentity.uuid)
+      'inherit_condition': (uuid==Identity.uuid)
       }
   # Properties:
   recording_channels = orm.relationship(
@@ -187,7 +187,7 @@ class DTOIrregularlySampledSignal(DTOIdentity):
       )
 
 
-class DTOEvent(DTOIdentity):
+class DTOEvent(Identity):
   __tablename__ = PREFIX + 'events'
   uuid = sa.Column(
       sa.ForeignKey(BB_PREFIX + 'identities.uuid'),
@@ -197,7 +197,7 @@ class DTOEvent(DTOIdentity):
       sa.ForeignKey(BB_PREFIX + 'identities.uuid'),
       )
   __mapper_args__ = {'polymorphic_identity': 'Event',
-      'inherit_condition': (uuid==DTOIdentity.uuid)
+      'inherit_condition': (uuid==Identity.uuid)
       }
   # Datajongleur link
   dto_id_point_uuid = sa.Column(
@@ -216,7 +216,7 @@ class DTOEvent(DTOIdentity):
       primaryjoin=(dto_id_point_uuid==DTOIDPoint.uuid)
       )
 
-class DTOEventArray(DTOIdentity):
+class DTOEventArray(Identity):
   __tablename__ = PREFIX + 'event_arrays'
   uuid = sa.Column(
       sa.ForeignKey(BB_PREFIX + 'identities.uuid'),
@@ -226,7 +226,7 @@ class DTOEventArray(DTOIdentity):
       sa.ForeignKey(BB_PREFIX + 'identities.uuid'),
       )
   __mapper_args__ = {'polymorphic_identity': 'EventArray',
-      'inherit_condition': (uuid==DTOIdentity.uuid)
+      'inherit_condition': (uuid==Identity.uuid)
       }
   # Datajongleur link
   dto_quantity_uuid = sa.Column(
@@ -246,7 +246,7 @@ class DTOEventArray(DTOIdentity):
       )
 
 
-class DTOEpoch(DTOIdentity):
+class DTOEpoch(Identity):
   __tablename__ = PREFIX + 'epochs'
   uuid = sa.Column(
       sa.ForeignKey(BB_PREFIX + 'identities.uuid'),
@@ -256,7 +256,7 @@ class DTOEpoch(DTOIdentity):
       sa.ForeignKey(BB_PREFIX + 'identities.uuid'),
       )
   __mapper_args__ = {'polymorphic_identity': 'Epoch',
-      'inherit_condition': (uuid==DTOIdentity.uuid)
+      'inherit_condition': (uuid==Identity.uuid)
       }
   # Datajongleur link
   dto_period_uuid = sa.Column(
@@ -276,7 +276,7 @@ class DTOEpoch(DTOIdentity):
       )
 
 
-class Unit(DTOIdentity):
+class Unit(Identity):
   __tablename__ = PREFIX + 'units'
   uuid = sa.Column(
       sa.ForeignKey(BB_PREFIX + 'identities.uuid'),
@@ -288,7 +288,7 @@ class Unit(DTOIdentity):
       nullable=True)
   __mapper_args__ = {
       'polymorphic_identity': 'Unit',
-      'inherit_condition': (uuid==DTOIdentity.uuid)
+      'inherit_condition': (uuid==Identity.uuid)
       }
   # Properties:
   recording_channel_groups = orm.relationship(
@@ -299,7 +299,7 @@ class Unit(DTOIdentity):
       )
 
 
-class DTOSpikeTrain(DTOIdentity):
+class DTOSpikeTrain(Identity):
   __tablename__ = PREFIX + 'spike_trains'
   uuid = sa.Column(
       sa.ForeignKey(BB_PREFIX + 'identities.uuid'),
@@ -311,7 +311,7 @@ class DTOSpikeTrain(DTOIdentity):
       nullable=True)
   __mapper_args__ = {
       'polymorphic_identity': 'SpikeTrain',
-      'inherit_condition': (uuid==DTOIdentity.uuid)
+      'inherit_condition': (uuid==Identity.uuid)
       }
   # Datajongleur References
   dto_spike_times_uuid = sa.Column(
@@ -361,7 +361,7 @@ class DTOSpikeTrain(DTOIdentity):
       )
 
   
-class DTOSpike(DTOIdentity):
+class DTOSpike(Identity):
   __tablename__ = PREFIX + 'spikes'
   uuid = sa.Column(
       sa.ForeignKey(BB_PREFIX + 'identities.uuid'),
@@ -373,7 +373,7 @@ class DTOSpike(DTOIdentity):
       nullable=True)
   __mapper_args__ = {
       'polymorphic_identity': 'SpikeTrain',
-      'inherit_condition': (uuid==DTOIdentity.uuid)
+      'inherit_condition': (uuid==Identity.uuid)
       }
   # Datajongleur References
   time_dto_id_point_uuid = sa.Column(

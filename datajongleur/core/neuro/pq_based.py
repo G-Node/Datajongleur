@@ -14,96 +14,9 @@ from datajongleur.utils.sa import addInfoQuantityDBAccess, dtoAttrs2Info
 
 @addInfoQuantityDBAccess
 @addAttributesProxy(['uuid'], '_dto')
-class TimePoint(InfoQuantity):
-  _DTO = DTOTimePoint
-
-  @property
-  def signal(self):
-    return self.view(Quantity) 
-
-  @property
-  def info(self):
-    return {'signal': self.signal}
 
 @addInfoQuantityDBAccess
 @addAttributesProxy(['uuid'], '_dto')
-class Period(InfoQuantity, i.Interval):
-  _DTO = DTOPeriod
-
-  @classmethod
-  def newByDTO(cls, dto):
-    obj = Quantity(
-        [dto.start, dto.stop],
-        dto.units,
-        ).view(cls)
-    obj._dto = dto
-    return obj
-
-  def __getitem__(self, key):
-    return Quantity.__getitem__(self.view(Quantity), key)
-  
-  @property
-  def start(self):
-    return self[0]
-
-  @property
-  def stop(self):
-    return self[1]
-
-  @property
-  def length(self):
-    return np.diff(self)[0]
-
-  @property
-  def signal(self):
-    return self.view(Quantity) 
-
-  @property
-  def info(self):
-    return {'signal': self.signal}
-
-
-@addInfoQuantityDBAccess
-@addAttributesProxy(['uuid'], '_dto')
-class SampledTimeSeries(InfoQuantity, i.SampledSignal, i.Interval):
-  _DTO = DTOSampledTimeSeries
-
-  # ----- Implementing Interval ------
-  @property
-  def start(self):
-    return self.info['signal_base'].min()
-
-  @property
-  def stop(self):
-    return self.info['signal_base'].max()
-
-  @property
-  def length(self):
-    return self.stop - self.start
-
-  # ----- Implementing SampledSignal  ------
-  @property
-  def signal(self):
-    return self.info['signal']
-
-  @property
-  def signal_base(self):
-    return self.info['signal_base']
-
-  @property
-  def n_sampling_points(self):
-    return Quantity(len(self), '')
-
-  @property
-  def info(self):
-    signal = self.view(Quantity)
-    signal_base = Quantity(
-      self._dto.signal_base_amount,
-      self._dto.signal_base_units)
-    signal_base.setflags(write=False)
-    return {
-        'signal': signal,
-        'signal_base': signal_base}
 
 
 @addInfoQuantityDBAccess
@@ -115,14 +28,6 @@ class SpikeTimes(SampledTimeSeries):
   """
   _DTO = DTOSpikeTimes
 
-  @property
-  def info(self):
-    signal = Quantity(np.ones(len(self), dtype=bool))
-    signal_base = self.view(Quantity)
-    return {
-        'signal': signal,
-        'signal_base': signal_base}
- 
 
 @addInfoQuantityDBAccess
 @addAttributesProxy(['uuid'], '_dto')

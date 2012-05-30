@@ -95,28 +95,27 @@ class DTOInfoQuantity (Quantity):
   amount = None
   units = None
 
-
 class Interval(Value):
-  def getStart(self):
+  def get_start(self):
     raise NotImplementedError
-  def getStop(self):
+  def get_stop(self):
     raise NotImplementedError
-  def getLength(self):
+  def get_length(self):
     raise NotImplementedError
 
 
 class SampledSignal(Quantity):
-  def getSignal(self):
+  def get_signal(self):
     raise NotImplementedError
-  def getSignalBase(self):
+  def get_signal_base(self):
     raise NotImplementedError
-  def getNSamplingPoints(self):
+  def get_n_sampling_points(self):
     raise NotImplementedError
 
 
 class RegularlySampledSignal(SampledSignal , Interval):
-  def getSamplingRate(self):
+  def get_sampling_rate(self):
     raise NotImplementedError
-  def getStepSize(self):
+  def get_step_size(self):
     raise NotImplementedError
 

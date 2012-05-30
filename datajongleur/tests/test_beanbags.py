@@ -3,9 +3,9 @@ import quantities as pq
 import numpy as np
 import random
 
-from datajongleur.beanbags.models import *
-from datajongleur.tests import session
-from datajongleur.utils.miscellaneous import NumericWithUnits
+from datajongleur.core.models import *
+from datajongleur.tests.utils import session
+from datajongleur.core.beanbags import NumericWithUnits
 
 numbers = []
 units =[]

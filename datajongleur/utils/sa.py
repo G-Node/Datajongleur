@@ -120,18 +120,17 @@ def addInfoQuantityDBAccess(cls):
   def newBySession(cls, uuid):
     if not hasattr(cls, "session"):
       cls.session = getSession()
-    dto = cls.session.query(cls._DTO).filter(
-        getattr(cls._DTO, 'uuid') == uuid).first()
-    return cls.newByDTO(dto)
+    dto = cls.session.query(cls).filter(
+        getattr(cls, 'uuid') == uuid).first()
+    return dto
   @classmethod
   def load(cls, uuid):
     return cls.newBySession(uuid)
   def save(self):
     if not hasattr(self, "session"):
       self.__class__.session = getSession()
-    dto = self.getDTO()
-    uuid = self.uuid
-    self.session.add (dto)
+    #uuid = self.uuid
+    self.session.add (self)
     self.session.commit ()
     #if uuid is not self.uuid:
     #  print "Assigned attribute ``uuid`` --> %r" % (self.uuid)
