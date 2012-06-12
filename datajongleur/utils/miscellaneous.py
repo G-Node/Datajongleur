@@ -1,8 +1,4 @@
 import numpy as np
-try:
-  from quantities import Quantity
-except ImportError:
-  Quantity = None
 
 def unspec_args2info_dict(args, kwargs):
   """
@@ -100,6 +96,8 @@ def addDictAccessByAttrs(key_names, dict_name):
     return cls
   return deco 
 
+
+"""
 def change_return_type(result_cls):
   def decorator_func(cls):
     def AdjustReturnType(func):
@@ -145,6 +143,8 @@ def change_return_type(result_cls):
         'trace',
         'transpose',
         'var',
+        '__len__',
+        'len',
         '__getitem__',
         '__getslice__',
         '__abs__',
@@ -173,6 +173,7 @@ def change_return_type(result_cls):
     cls._arithmetic_return_type = result_cls
     return cls
   return decorator_func
+"""
 
 class ListView(list):
   def __init__(self, raw_list, raw2new, new2raw):
@@ -272,6 +273,7 @@ def adapt_numerical_functions(cls):
       'trace',
       'transpose',
       'var',
+      '__len__',
       '__getitem__',
       '__getslice__',
       '__abs__',
@@ -294,69 +296,10 @@ def adapt_numerical_functions(cls):
       '__rmul__',
       '__rpow__',
       '__rsub__',
+      # test general assumptions for the following
+      ''
       ]
   for functionName in functionNames:
     foo = generateAdjustedFunction(functionName)
     setattr(cls, functionName, foo)
   return cls
-
-@adapt_numerical_functions
-class NumericWithUnits(object):
-  def __init__(self, amount, units=None):
-    if type(amount)==type(self):
-      assert units==None or units==amount.units
-      self._amount = amount.amount
-      self._units = amount.units
-    elif type(amount)==Quantity: # Quantity - if installed, otherwise None
-      assert units==None or units==amount.dimensionality.string
-      self._amount= amount.view(np.ndarray)
-      self._units = amount.dimensionality.string
-    else:
-      self._amount = np.array(amount)
-      self._units = units
-    if type(self.signal) == Quantity:
-      self._dimensionality = self.signal._dimensionality
-      self.dimensionality = self.signal.dimensionality
-    self._amount.setflags(write='False')
-  
-  @property
-  def signal(self):
-    if Quantity:
-      return Quantity(self._amount, self._units)
-    else:
-      return self._amount
-
-  @property
-  def amount(self):
-    return self._amount
-
-  @property
-  def units(self):
-    return self._units
-
-  def __repr__(self):
-    return "%s(%r, %r)" %(
-        self.__class__.__name__,
-        self.amount,
-        self.units)
-
-  def __array__(self):
-    """
-    Provide an 'array' view or copy over numeric.samples
-
-    Parameters
-    ----------
-    dtype: type, optional
-      If provided, passed to .signal.__array__() call
-
-    *args to mimique numpy.ndarray.__array__ behavior which relies
-    on the actual number of arguments
-    """
-    return self.signal
-
-  def __array_wrap__(self, out_arr, context=None):
-    my_type = type(context[0](self.signal,out_arr))
-    if hasattr(my_type, 'dimensionality'):
-      return my_type(out_arr, self.units)
-    else:
-      return out_arr

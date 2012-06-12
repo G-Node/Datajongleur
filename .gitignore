@@ -6,3 +6,4 @@ old/*
 *~
 doc/build/*
 *sqlite
+.idea

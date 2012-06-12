@@ -11,8 +11,6 @@ from datajongleur import Base, DBSession
 from datajongleur.utils.sa import NumpyType, UUID, UUIDMixin
 PREFIX = "beanbag_"
 #from datajongleur.addendum.models import Addendum, AddendumBadgeMap
-from datajongleur.utils.miscellaneous import kwargs2info_dict
-from datajongleur.utils.miscellaneous import NumericWithUnits
 from datajongleur.utils.sa import addInfoQuantityDBAccess
 import datajongleur.beanbags.nwu as nwu
 
@@ -114,7 +112,7 @@ class Identity(UUIDMixin, Base):
 # Beanbags
 ##########
 
-class Quantity(NumericWithUnits, Identity):
+class Quantity(nwu.NumericWithUnits, Identity):
     __tablename__ = PREFIX + 'quantities'
     __mapper_args__ = {'polymorphic_identity': 'Quantity'}
     uuid = sa.Column(
@@ -179,7 +177,7 @@ class TimePoint(nwu.TimePoint, Identity):
 
     @orm.reconstructor
     def init_on_load(self):
-        NumericWithUnits.__init__(self, self._amount, self._units)
+        nwu.NumericWithUnits.__init__(self, self._amount, self._units)
 
 
 class Period(nwu.Period, Identity):
@@ -194,7 +192,7 @@ class Period(nwu.Period, Identity):
 
     @orm.reconstructor
     def init_on_load(self):
-        NumericWithUnits.__init__(self, [self._start, self._stop], self._units)
+        nwu.NumericWithUnits.__init__(self, [self._start, self._stop], self._units)
 
 
 class SampledSignal(nwu.SampledSignal, Identity):
@@ -215,8 +213,8 @@ class SampledSignal(nwu.SampledSignal, Identity):
 
     @orm.reconstructor
     def init_on_load(self):
-        NumericWithUnits.__init__(self, self._amount, self._units)
-        self.signal_base = NumericWithUnits(
+        nwu.NumericWithUnits.__init__(self, self._amount, self._units)
+        self.signal_base = nwu.NumericWithUnits(
             self._signal_base_amount, self._signal_base_units)
 
 
@@ -237,18 +235,28 @@ class RegularlySampledSignal(nwu.RegularlySampledSignal, Identity):
 
     def __init__(self, *args, **kwargs):
         nwu.RegularlySampledSignal.__init__(self, *args, **kwargs)
-        self._start         = self.start
-        self._stop          = self.stop
+        self._sample_start         = self.start
+        self._sample_stop          = self.stop
         self._sample_units    = self.period.units
 
     @orm.reconstructor
     def init_on_load(self):
-        NumericWithUnits.__init__(self, self._amount, self._units)
-        self.period = Period([self._start, self._stop], self._time_units)
+        """
+        nwu.NumericWithUnits.__init__(self, self._amount, self._units)
+        self.period = Period(
+                [self._sample_start, self._sample_stop],
+                self._sample_units)
+        """
+        nwu.RegularlySampledSignal.__init__(
+                self,
+                self._amount,
+                self._units,
+                [self._sample_start, self._sample_stop],
+                self._sample_units)
 
-    def checksum_json(self):
-        return checksum_json(self)
-  
+    @property
+    def info(self):
+        return {'period': self.period}
 
 def initialize_sql(engine):
     Base.metadata.bind = engine

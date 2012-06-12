@@ -3,8 +3,8 @@ def quantity(iq, example_result):
   This test applies `pars pro toto`: instead of explicitly testing all
   arithmetic operations and test cases, a representative subset is tested.
   """
-  assert type(iq.max()) == iq._arithmetic_return_type
-  assert type(iq * iq) == iq._arithmetic_return_type
+  assert type(iq.max()) == type(iq.signal.max())
+  assert type(iq * iq) == type(iq.signal * iq.signal)
   assert (iq * iq).max() == example_result
   return True
 
@@ -15,8 +15,7 @@ def interval(iq, start, stop):
   return True
 
 def sampled_signal(iq):
-  assert len(iq) == len(iq.signal)
-  assert len(iq) == len(iq.base)
+  assert len(iq.signal) == len(iq.signal_base)
   assert len(iq) == iq.n_sampling_points
   return True
 
