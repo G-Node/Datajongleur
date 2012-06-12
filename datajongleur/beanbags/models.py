@@ -198,7 +198,7 @@ class Period(nwu.Period, Identity):
 
 
 class SampledSignal(nwu.SampledSignal, Identity):
-    __tablename__ = PREFIX + 'regularly_sampled_signal'
+    __tablename__ = PREFIX + 'sampled_signal'
     __mapper_args__ = {'polymorphic_identity': 'SampledSignal'}
     uuid = sa.Column(
         sa.ForeignKey(PREFIX + 'identities.uuid'),
@@ -221,16 +221,30 @@ class SampledSignal(nwu.SampledSignal, Identity):
 
 
 class RegularlySampledSignal(nwu.RegularlySampledSignal, Identity):
-    __tablename__ = PREFIX + 'regularly_sampled_time_series'
-    __mapper_args__ = {'polymorphic_identity': 'RegularlySampledTimeSeries'}
+    """
+    Usage: >>> rss = RegularlySampledSignal([1,2,3], 'mV', [0, 5], 'ms')
+    """
+    __tablename__ = PREFIX + 'regularly_sampled_signal'
+    __mapper_args__ = {'polymorphic_identity': 'RegularlySampledSignal'}
     uuid = sa.Column(
         sa.ForeignKey(PREFIX + 'identities.uuid'),
         primary_key=True)
-    amount = sa.Column('amount', NumpyType)
-    units = sa.Column('units', sa.String)
-    start = sa.Column('start', sa.Float)
-    stop = sa.Column('stop', sa.Float)
-    time_units = sa.Column('time_units', sa.String)
+    _amount = sa.Column('amount', NumpyType)
+    _units = sa.Column('units', sa.String)
+    _sample_start = sa.Column('start', sa.Float)
+    _sample_stop = sa.Column('stop', sa.Float)
+    _sample_units = sa.Column('time_units', sa.String)
+
+    def __init__(self, *args, **kwargs):
+        nwu.RegularlySampledSignal.__init__(self, *args, **kwargs)
+        self._start         = self.start
+        self._stop          = self.stop
+        self._sample_units    = self.period.units
+
+    @orm.reconstructor
+    def init_on_load(self):
+        NumericWithUnits.__init__(self, self._amount, self._units)
+        self.period = Period([self._start, self._stop], self._time_units)
 
     def checksum_json(self):
         return checksum_json(self)

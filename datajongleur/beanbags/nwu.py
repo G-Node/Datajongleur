@@ -170,7 +170,7 @@ class RegularlySampledSignal(InfoQuantity, NumericWithUnits,
 
     @property
     def stop(self):
-        return self.period.start
+        return self.period.stop
 
     @property
     def length(self):
