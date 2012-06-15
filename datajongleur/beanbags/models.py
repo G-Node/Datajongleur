@@ -1,5 +1,4 @@
 import numpy as np
-
 import datetime as dt
 import sqlalchemy as sa
 import sqlalchemy.orm as orm
@@ -8,7 +7,7 @@ from sqlalchemy.ext.declarative import declared_attr
 from datajongleur import Base, DBSession
 from datajongleur.utils.sa import NumpyType, UUID, UUIDMixin
 PREFIX = "beanbag_"
-#from datajongleur.addendum.models import Addendum, AddendumBadgeMap
+from datajongleur.addendum.models import Addendum, AddendumBadgeMap
 from datajongleur.utils.sa import addInfoQuantityDBAccess
 import datajongleur.beanbags.nwu as nwu
 
@@ -25,6 +24,33 @@ def catchAttributeError(func):
 # Identity
 ##########
 
+identity_tag_maps = sa.Table(
+    PREFIX + 'identity_tag_maps',
+    Base.metadata,
+    sa.Column('identity_uuid', sa.ForeignKey(PREFIX + 'identities.uuid'), primary_key=True),
+    sa.Column('tag_uuid', sa.ForeignKey(PREFIX + 'tags.uuid'), primary_key=True))
+
+
+def find_or_create_tag(kw):
+    tag = Tag.query.filter_by(name=kw).first()
+    if not(tag):
+        tag = Tag(name=kw)
+        # if aufoflush=False used in the session, then uncomment below
+        if not hasattr(Tag, "session"):
+            Tag.session = DBSession()
+        Tag.session.add(tag)
+        Tag.session.flush()
+    return tag
+
+
+class Tag(UUIDMixin, Base):
+    __tablename__ = PREFIX + 'tags'
+    name = sa.Column(sa.String, unique=True, nullable=False)
+
+    def __init__(self, name):
+        self.name = name
+
+@addInfoQuantityDBAccess
 class Identity(UUIDMixin, Base):
     __tablename__ = PREFIX + 'identities'
     mtime = sa.Column(
@@ -38,6 +64,15 @@ class Identity(UUIDMixin, Base):
     _dto_type = sa.Column('dto_type', sa.String, nullable=False)
     __mapper_args__ = {'polymorphic_on': _dto_type}
 
+
+    # tags & proxy the 'keyword' attribute from the 'kw' relationship
+    tag_objects = orm.relationship('Tag',
+        secondary=identity_tag_maps,
+        backref='tagged')
+    tags = association_proxy('tag_objects', 'name',
+        creator=find_or_create_tag)
+
+    # Addendum proxies
     _name = association_proxy('addendum', 'name',
         creator=lambda name: Addendum(
           name=name, description='', flag=False))
@@ -55,10 +90,6 @@ class Identity(UUIDMixin, Base):
     @catchAttributeError
     def badges(self):
         return self._badges
-
-    @badges.setter
-    def badges(self, value):
-        self._badges = value
 
     @property
     @catchAttributeError
@@ -86,25 +117,7 @@ class Identity(UUIDMixin, Base):
     @flag.setter
     def flag(self, value):
         self._flag = value
-    
-    @classmethod
-    def newByUUID(cls, uuid):
-        if not hasattr(cls, "session"):
-            cls.session = DBSession()
-        dto = cls.session.query(cls).filter(
-            getattr(cls, 'uuid') == uuid).first()
-        return dto
 
-    @classmethod
-    def load(cls, uuid):
-        return cls.newByUUID(uuid)
-
-    def save(self):
-        if not hasattr(self, "session"):
-            self.__class__.session = DBSession()
-        uuid = self.uuid
-        self.session.add (self)
-        self.session.commit ()
 
 ##########
 # Beanbags
@@ -256,10 +269,10 @@ class RegularlySampledSignal(nwu.RegularlySampledSignal, Identity):
     def info(self):
         return {'period': self.period}
 
+
 def initialize_sql(engine):
     Base.metadata.bind = engine
     Base.metadata.create_all(engine)
-
 
 
 if __name__ == '__main__':

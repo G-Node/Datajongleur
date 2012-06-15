@@ -3,22 +3,9 @@ adjusted from http://stackoverflow.com/questions/1436011/star-schema-in-sqlalche
 """
 import sqlalchemy as sa
 import sqlalchemy.orm as orm
-from sqlalchemy.ext.declarative import instrument_declarative
+from sqlalchemy.ext.declarative import instrument_declarative, declarative_base
 
-class BaseMeta(type):
-    classes = set()
-
-    def __init__(cls, classname, bases, dict_):
-        klass = type.__init__(cls, classname, bases, dict_)
-        if 'metadata' not in dict_:
-            BaseMeta.classes.add(cls)
-        return klass
-
-
-class Base(object):
-    __metaclass__ = BaseMeta
-    metadata = sa.MetaData()
-
+class MyBase(object):
     def __init__(self, **kw):
         for k in kw:
             setattr(self, k, kw[k])
@@ -28,6 +15,9 @@ class Base(object):
         registry = {}
         for c in BaseMeta.classes:
             instrument_declarative(c, registry, cls.metadata)
+
+
+Base = declarative_base(cls=MyBase)
 
 
 class Store(Base):

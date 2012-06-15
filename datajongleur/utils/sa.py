@@ -7,7 +7,7 @@ import sqlalchemy as sa
 from sqlalchemy.ext.declarative import declared_attr
 from sqlalchemy.ext.declarative import instrument_declarative
 from sqlalchemy.types import TypeDecorator, CHAR
-
+from datajongleur import DBSession
 
 class BaseMeta(type):
     classes = set()
@@ -42,10 +42,10 @@ class UUID(TypeDecorator):
     impl = CHAR
 
     def load_dialect_impl(self, dialect):
-      if False: #dialect.name == 'postgresql':
-          return dialect.type_descriptor(UUID())
-      else:
-          return dialect.type_descriptor(CHAR(32))
+        if False: #dialect.name == 'postgresql':
+            return dialect.type_descriptor(UUID())
+        else:
+            return dialect.type_descriptor(CHAR(32))
 
     def process_bind_param(self, value, dialect):
         if value is None:
@@ -64,98 +64,103 @@ class UUID(TypeDecorator):
             return value
         else:
             return uuid_package.UUID(value)
- 
+
 
 class UUIDMixin(object):
-  @declared_attr
-  def __tablename__(cls):
-      return cls.__name__.lower()
-  uuid = sa.Column('uuid', UUID, unique=True,
-      default=uuid_package.uuid4,
-      primary_key=True)
+    @declared_attr
+    def __tablename__(cls):
+        return cls.__name__.lower()
+
+    uuid = sa.Column('uuid', UUID, unique=True,
+        default=uuid_package.uuid4,
+        primary_key=True)
 
 
-class NumpyType (sa.types.TypeDecorator):
-  impl = sa.types.LargeBinary
+class NumpyType(sa.types.TypeDecorator):
+    impl = sa.types.LargeBinary
 
-  def process_bind_param(self, value, dialect):
-    return zlib.compress(value.dumps(), 9)
+    def process_bind_param(self, value, dialect):
+        return zlib.compress(value.dumps(), 9)
 
-  def process_result_value(self, value, dialect):
-    return np.loads(zlib.decompress(value))
+    def process_result_value(self, value, dialect):
+        return np.loads(zlib.decompress(value))
 
 
-class NumpyTypePGSpecific (sa.types.TypeDecorator):
-  """
-  see `<http://www.sqlalchemy.org/docs/core/types.html>`_
-  """
-  impl = sa.types.LargeBinary
-
-  def load_dialect_impl(self, dialect):
-    if False: #dialect.name == 'postgresql':
-      return dialect.type_descriptor(ARRAY(sa.Float))
-    else:
-      return dialect.type_descriptor(sa.types.LargeBinary)
-
-  def process_bind_param(self, value, dialect):
+class NumpyTypePGSpecific(sa.types.TypeDecorator):
     """
-    not adjusted yet
+    see `<http://www.sqlalchemy.org/docs/core/types.html>`_
     """
-    return zlib.compress(value.dumps(), 9)
+    impl = sa.types.LargeBinary
 
-  def process_result_value(self, value, dialect):
-    """
-    not adjusted yet
-    """
-    return np.loads(zlib.decompress(value))
+    def load_dialect_impl(self, dialect):
+        if False: #dialect.name == 'postgresql':
+            return dialect.type_descriptor(ARRAY(sa.Float))
+        else:
+            return dialect.type_descriptor(sa.types.LargeBinary)
+
+    def process_bind_param(self, value, dialect):
+        """
+        not adjusted yet
+        """
+        return zlib.compress(value.dumps(), 9)
+
+    def process_result_value(self, value, dialect):
+        """
+        not adjusted yet
+        """
+        return np.loads(zlib.decompress(value))
 
 #######################
 ## Decorators        ##
 def addInfoQuantityDBAccess(cls):
-  """
-  This decorator adds the following methods:
-  * ``load(PK)``
-  * ``save()``
-  """
-  @classmethod
-  def newBySession(cls, uuid):
-    if not hasattr(cls, "session"):
-      cls.session = getSession()
-    dto = cls.session.query(cls).filter(
-        getattr(cls, 'uuid') == uuid).first()
-    return dto
-  @classmethod
-  def load(cls, uuid):
-    return cls.newBySession(uuid)
-  def save(self):
-    if not hasattr(self, "session"):
-      self.__class__.session = getSession()
-    dto = self.getDTO()
-    uuid = self.uuid
-    self.session.add (dto)
-    self.session.commit ()
-    #if uuid is not self.uuid:
-    #  print "Assigned attribute ``uuid`` --> %r" % (self.uuid)
-    
-  cls.newBySession = newBySession
-  cls.load = load
-  cls.save = save
-  return cls
+    """
+    This decorator adds the following methods:
+    * ``load(PK)``
+    * ``save()``
+    PR: Not used for Identity successors
+    """
+
+    @classmethod
+    def newByUUID(cls, uuid):
+        if not hasattr(cls, "session"):
+            cls.session = DBSession()
+        dto = cls.session.query(cls).filter(
+            getattr(cls, 'uuid') == uuid).first()
+        return dto
+
+    @classmethod
+    def load(cls, uuid):
+        return cls.newByUUID(uuid)
+
+    def save(self):
+        if not hasattr(self, "session"):
+            self.__class__.session = DBSession()
+        self.session.add(self)
+        self.session.commit()
+
+    cls.newByUUID = newByUUID
+    cls.load = load
+    cls.save = save
+    return cls
+
 
 def dtoAttrs2Info(attrs_to_exclude=['amount', 'units', 'uuid']):
-  def decorate_func(cls):
-    cols = cls._DTO.__table__.columns.keys()
-    for attr in attrs_to_exclude:
-      cols.remove(attr)
-    @property
-    def info(self):
-      info_dict = {}
-      for col in cols:
-        info_dict[col] = getattr(self._dto, col)
-      return info_dict
-    cls.info = info
-    return cls
-  return decorate_func
+    def decorate_func(cls):
+        cols = cls._DTO.__table__.columns.keys()
+        for attr in attrs_to_exclude:
+            cols.remove(attr)
+
+        @property
+        def info(self):
+            info_dict = {}
+            for col in cols:
+                info_dict[col] = getattr(self._dto, col)
+            return info_dict
+
+        cls.info = info
+        return cls
+
+    return decorate_func
 
 
 ## (end: Decorators) ##

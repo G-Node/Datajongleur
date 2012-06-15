@@ -1,30 +1,12 @@
 import nose
-import quantities as pq
 import numpy as np
 import random
 
 from datajongleur.beanbags.neuro.models import *
+from datajongleur.tests import *
 
 import datajongleur.tests.i_asserts as i_asserts
 import datajongleur.tests.sa_asserts as sa_asserts
-
-from datajongleur.tests import session
-
-numbers = []
-numbers2 = []
-numbers_int = []
-units = []
-time_units = ['s', 'ms', 'us', 'ns', 'ps']
-
-for idx in range(4):
-    numbers.append(random.random())
-    numbers2.append(random.random())
-    numbers_int.append(random.randint(0, 10))
-    units.append(random.choice(time_units))
-
-np_numbers = np.array(numbers)
-np_numbers2 = np.array(numbers2)
-np_numbers_int = np.array(numbers_int)
 
 def test_SpikeTimes():
     st = SpikeTimes(numbers, units[0])

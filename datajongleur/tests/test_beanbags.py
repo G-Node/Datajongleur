@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 import nose
 import quantities as pq
 import numpy as np
@@ -5,27 +6,11 @@ import random
 
 from datajongleur.beanbags.models import *
 from datajongleur.beanbags.nwu import NumericWithUnits
+from datajongleur.tests import *
 
 import datajongleur.tests.i_asserts as i_asserts
 import datajongleur.tests.sa_asserts as sa_asserts
 
-from datajongleur.tests import session
-
-numbers = []
-numbers2 = []
-numbers_int = []
-units = []
-time_units = ['s', 'ms', 'us', 'ns', 'ps']
-
-for idx in range(4):
-    numbers.append(random.random())
-    numbers2.append(random.random())
-    numbers_int.append(random.randint(0, 10))
-    units.append(random.choice(time_units))
-
-np_numbers = np.array(numbers)
-np_numbers2 = np.array(numbers2)
-np_numbers_int = np.array(numbers_int)
 
 def test_NumericWithUnits():
     num = NumericWithUnits(pq.Quantity([1, 2, 3], 'mV'))
@@ -40,9 +25,18 @@ def test_NumericWithUnits():
     assert (num * num).dimensionality.string\
         == (num.signal * num.signal).dimensionality.string
 
+def test_Tag():
+    tp = TimePoint(numbers[0], units[0])
+    p = Period(numbers[0:2], units[0])
+    tp.tags.append('blau')
+    tp.tags.append(u'grün')
+    p.tags.append('blau')
+    tp.save()
+    p.save()
+    t = Tag.query.filter_by(name='blau').one()
+    return t
 
 def test_InfoQuantity():
-    # __new__ & __init__
     a = InfoQuantity([2, 3], "mV", info={'vorname': "max"}, alter=3)
     b = InfoQuantity(1, "s", name="Max", last_name="Mustermann")
     c = InfoQuantity(2, "s")
@@ -99,3 +93,6 @@ def test_raises_assert_errors():
   c = InfoQuantity(2, "s")
   InfoQuantity(c*c, 's')
 """
+
+if __name__ == "__main__":
+    t = test_Tag()

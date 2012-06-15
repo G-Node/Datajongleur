@@ -6,8 +6,9 @@ from sqlalchemy import engine_from_config
 from datajongleur.utils.config import ConfigJongleur
 from datajongleur.utils.dto import BBConverter
 
-Base = declarative_base()
 DBSession = scoped_session(sessionmaker())
+Base = declarative_base()
+Base.query = DBSession.query_property()
 cj = ConfigJongleur()
 bbc = BBConverter()
 
