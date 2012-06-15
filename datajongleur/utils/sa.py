@@ -1,14 +1,38 @@
 import numpy as np
-import quantities as pq
 import zlib
 import uuid as uuid_package # to avoid confusion with attribute `uuid`
 
 import sqlalchemy as sa
-from sqlalchemy.orm.util import has_identity
+#from sqlalchemy.orm.util import has_identity
 from sqlalchemy.ext.declarative import declared_attr
-
+from sqlalchemy.ext.declarative import instrument_declarative
 from sqlalchemy.types import TypeDecorator, CHAR
-from datajongleur import Base, DBSession, cj
+
+
+class BaseMeta(type):
+    classes = set()
+
+    def __init__(cls, classname, bases, dict_):
+        klass = type.__init__(cls, classname, bases, dict_)
+        if 'metadata' not in dict_:
+            BaseMeta.classes.add(cls)
+        return klass
+
+
+class Base(object):
+    __metaclass__ = BaseMeta
+    metadata = sa.MetaData()
+
+    def __init__(self, **kw):
+        for k in kw:
+            setattr(self, k, kw[k])
+
+    @classmethod
+    def configure(cls, *klasses):
+        registry = {}
+        for c in BaseMeta.classes:
+            instrument_declarative(c, registry, cls.metadata)
+
 
 class UUID(TypeDecorator):
     """Platform-independent UUID type.
@@ -87,29 +111,6 @@ class NumpyTypePGSpecific (sa.types.TypeDecorator):
 
 #######################
 ## Decorators        ##
-
-def getSession():
-  return DBSession()
-
-"""
-PR: not necessary anymore -> use `addAttributesProxy` instead.
-def passAttrDTO(cls):
-  def genGetMyAttr(attr_name):
-    def getMyAttr(self):
-      try:
-        dto = self.getDTO()
-        if has_identity(dto):
-          return getattr(self.getDTO(), attr_name)
-        return
-      except Exception, e:
-        print Exception
-        print e
-    return getMyAttr
-  cls.getUUID = genGetMyAttr('uuid')
-  cls.uuid = property(cls.getUUID)
-  return cls
-"""
-
 def addInfoQuantityDBAccess(cls):
   """
   This decorator adds the following methods:
@@ -159,13 +160,4 @@ def dtoAttrs2Info(attrs_to_exclude=['amount', 'units', 'uuid']):
 
 ## (end: Decorators) ##
 #######################
-
-"""
-def connectDB(filename='db_setup.ini'):
-  from sqlalchemy import engine_from_config
-  from datajongleur import initialize_sql
-  config = LoadConfig(filename)
-  engine = engine_from_config(config, 'sqlalchemy.')
-  initialize_sql(engine)
-"""
 
