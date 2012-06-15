@@ -9,6 +9,8 @@ from datajongleur.beanbags.nwu import NumericWithUnits
 import datajongleur.tests.i_asserts as i_asserts
 import datajongleur.tests.sa_asserts as sa_asserts
 
+from datajongleur.tests import session
+
 numbers = []
 numbers2 = []
 numbers_int = []

@@ -3,13 +3,12 @@ import quantities as pq
 import numpy as np
 import random
 
-from datajongleur.beanbags.models import *
 from datajongleur.beanbags.neuro.models import *
 
 import datajongleur.tests.i_asserts as i_asserts
 import datajongleur.tests.sa_asserts as sa_asserts
 
-#from datajongleur.tests import session
+from datajongleur.tests import session
 
 numbers = []
 numbers2 = []
