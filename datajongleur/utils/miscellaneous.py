@@ -1,3 +1,5 @@
+import numpy as np
+
 def unspec_args2info_dict(args, kwargs):
   """
   Turns `args` and `kwargs` into one dictionary `info` by the following rule:
@@ -94,6 +96,8 @@ def addDictAccessByAttrs(key_names, dict_name):
     return cls
   return deco 
 
+
+"""
 def change_return_type(result_cls):
   def decorator_func(cls):
     def AdjustReturnType(func):
@@ -139,6 +143,8 @@ def change_return_type(result_cls):
         'trace',
         'transpose',
         'var',
+        '__len__',
+        'len',
         '__getitem__',
         '__getslice__',
         '__abs__',
@@ -167,6 +173,7 @@ def change_return_type(result_cls):
     cls._arithmetic_return_type = result_cls
     return cls
   return decorator_func
+"""
 
 class ListView(list):
   def __init__(self, raw_list, raw2new, new2raw):
@@ -221,3 +228,78 @@ class ListView(list):
   def __eq__(self, other):
     return self._data == other._data
 
+class NPAdapter(np.ndarray):
+  def __new__(cls, signal, units):
+    """
+    NPAdapter is instanciated with `signal` and `units` but ignores `units`.
+    """
+    obj = np.array(signal)
+    return obj
+
+def adapt_numerical_functions(cls):
+  def generateAdjustedFunction(functionName):
+    def foo(self, *args, **kwargs):
+      function = getattr(self.signal.__class__, functionName)
+      return function(self.signal, *args, **kwargs)
+    return foo
+  functionNames = [
+      '_get_units',
+      '_set_units',
+      'rescale',
+      'ptp',
+      'clip',
+      'copy',
+      'compress',
+      'conj',
+      'cumprod',
+      'cumsum',
+      'diagonal',
+      'dot',
+      'flatten',
+      'getfield',
+      'round',
+      'trace',
+      'max',
+      'mean',
+      'min',
+      'newbyteorder',
+      'prod',
+      'ravel',
+      'reshape',
+      'resize',
+      'round',
+      'std',
+      'sum',
+      'trace',
+      'transpose',
+      'var',
+      '__len__',
+      '__getitem__',
+      '__getslice__',
+      '__abs__',
+      #
+      '__add__',
+      '__div__',
+      '__divmod__',
+      '__floordiv__'
+      '__mod__',
+      '__mul__',
+      '__pow__',
+      '__sub__',
+      #
+      '__radd__',
+      '__div__',
+      '__divmod__',
+      '__rfloordiv__',
+      '__rmod__',
+      '__imul__',
+      '__rmul__',
+      '__rpow__',
+      '__rsub__',
+      # test general assumptions for the following
+      ''
+      ]
+  for functionName in functionNames:
+    foo = generateAdjustedFunction(functionName)
+    setattr(cls, functionName, foo)
+  return cls

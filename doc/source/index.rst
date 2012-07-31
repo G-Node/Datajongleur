@@ -15,6 +15,7 @@ Contents:
    core/index_core.rst
    neuro/index_neuro.rst
    development/index_development.rst
+   usecases/index_usecases.rst
    faq/index_faq.rst
 
 Indices and tables
