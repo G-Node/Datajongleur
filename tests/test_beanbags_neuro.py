@@ -3,10 +3,10 @@ import numpy as np
 import random
 
 from datajongleur.beanbags.neuro.models import *
-from datajongleur.tests import *
+from tests import *
 
-import datajongleur.tests.i_asserts as i_asserts
-import datajongleur.tests.sa_asserts as sa_asserts
+import tests.i_asserts as i_asserts
+import tests.sa_asserts as sa_asserts
 
 def test_SpikeTimes():
     st = SpikeTimes(numbers, units[0])

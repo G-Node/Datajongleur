@@ -1,8 +1,8 @@
 import numpy as np
 from datajongleur.beanbags.nwu import NumericWithUnits,\
-        SampledSignal, RegularlySampledSignal
+        SimpleSampledSignal, RegularlySimpleSampledSignal
 
-class SpikeTimes(SampledSignal):
+class SpikeTimes(SimpleSampledSignal):
     """
     ``SpikeTimes`` are a special case of ``SampledSignal`` with value 1 for
     ``signals`` and spike times as ``signal_base``, respectively.
@@ -35,13 +35,13 @@ class SpikeTimes(SampledSignal):
             'signal_base': self.signal_base}
 
 
-class BinnedSpikes(RegularlySampledSignal):
+class BinnedSpikes(RegularlySimpleSampledSignal):
     """
     ``BinnedSpikes`` are a special case of ``RegularlySamgledSignal`` with
     integer values for ``signals`` and bin-times as ``signal_base``.
     """
     def __init__(self, amount, period_amount, period_units):
-        RegularlySampledSignal.__init__(
+        RegularlySimpleSampledSignal.__init__(
                 self,
                 np.array(amount, 'int'),
                 "",

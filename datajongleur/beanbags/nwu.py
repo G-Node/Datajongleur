@@ -185,7 +185,7 @@ class Period(InfoQuantity, NumericWithUnits, i.Interval):
             self.units)
 
 
-class SampledSignal(InfoQuantity, NumericWithUnits,
+class SimpleSampledSignal(InfoQuantity, NumericWithUnits,
     i.SampledSignal):
     def __init__(self, amount, units, signal_base_amount, signal_base_units):
         NumericWithUnits.__init__(self, amount, units)
@@ -222,7 +222,7 @@ class SampledSignal(InfoQuantity, NumericWithUnits,
             self.signal_base.units)
 
 
-class RegularlySampledSignal(InfoQuantity, NumericWithUnits,
+class RegularlySimpleSampledSignal(InfoQuantity, NumericWithUnits,
     i.RegularlySampledSignal):
     def __init__(self, amount, units, period_amount, period_units):
         NumericWithUnits.__init__(self, amount, unicode(units))

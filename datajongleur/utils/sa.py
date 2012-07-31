@@ -112,7 +112,7 @@ class NumpyTypePGSpecific(sa.types.TypeDecorator):
 
 #######################
 ## Decorators        ##
-def addInfoQuantityDBAccess(cls):
+def addSimpleDBAccess(cls):
     """
     This decorator adds the following methods:
     * ``load(PK)``

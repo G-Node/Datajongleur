@@ -6,10 +6,10 @@ import random
 
 from datajongleur.beanbags.models import *
 from datajongleur.beanbags.nwu import NumericWithUnits
-from datajongleur.tests import *
+from tests import *
 
-import datajongleur.tests.i_asserts as i_asserts
-import datajongleur.tests.sa_asserts as sa_asserts
+import tests.i_asserts as i_asserts
+import tests.sa_asserts as sa_asserts
 
 
 def test_NumericWithUnits():
@@ -64,8 +64,8 @@ def test_Period():
     assert np.array_equal(p.info['length'], p.length)
 
 
-def test_SampledSignal():
-    sts = SampledSignal(
+def test_SimpleSampledSignal():
+    sts = SimpleSampledSignal(
         numbers,
         units[0],
         signal_base_amount=numbers2,
@@ -76,8 +76,8 @@ def test_SampledSignal():
     assert np.array_equal(sts.info['signal_base'].amount, numbers2)
 
 
-def test_RegularlySampledSignal():
-    rsts = RegularlySampledSignal(
+def test_RegularlySimpleSampledSignal():
+    rsts = RegularlySimpleSimpleSampledSignal(
         numbers,
         units[0],
         [numbers2[0], numbers2[1]],

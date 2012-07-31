@@ -21,6 +21,8 @@ class Quantity(Value):
         raise NotImplementedError
     def units(self):
         raise NotImplementedError
+    def signal(self):
+        raise NotImplementedError
     # Arithmetics:
     def add(self, other): # +
         raise NotImplementedError
@@ -80,7 +82,9 @@ class Quantity(Value):
         return self.cmp(self, other)
 
 
-class DTOInfoQuantity (Quantity):
+class InfoQuantity (Quantity):
+    def info(self):
+        raise NotImplementedError
     def getDict (self):
         raise NotImplementedError
     def getJSON (self):
@@ -91,9 +95,6 @@ class DTOInfoQuantity (Quantity):
         raise NotImplementedError
     def getKey (self):
         raise NotImplementedError
-    ###
-    amount = None
-    units = None
 
 
 class Interval(Value):
@@ -106,16 +107,14 @@ class Interval(Value):
 
 
 class SampledSignal(Quantity):
-    def getSignal(self):
+    def signal_base(self):
         raise NotImplementedError
-    def getSignalBase(self):
-        raise NotImplementedError
-    def getNSamplingPoints(self):
+    def n_sampling_points(self):
         raise NotImplementedError
 
 
 class RegularlySampledSignal(SampledSignal , Interval):
-    def getSamplingRate(self):
+    def sampling_rate(self):
         raise NotImplementedError
-    def getStepSize(self):
+    def step_size(self):
         raise NotImplementedError

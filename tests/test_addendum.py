@@ -1,10 +1,9 @@
 # -*- coding: utf-8 -*-
 __author__ = 'philipp'
-from datajongleur.tests import *
+from tests import *
 
 from datajongleur.beanbags.models import *
 from datajongleur.addendum import *
-from datajongleur.tests import *
 
 def test_Addendum():
     a = Addendum(name="Max Mustermann", description="I am programmer", flag=True)

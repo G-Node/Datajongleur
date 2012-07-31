@@ -5,8 +5,4 @@ Use Cases
 .. toctree::
    :maxdepth: 2
 
-
-   DAL/index_dal.rst
-   beanbags_pq_based.rst
-
-.. todolist::
+   monk_fix_sac/index_monk_fix_sac.rst

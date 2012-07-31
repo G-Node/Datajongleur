@@ -8,7 +8,7 @@ from datajongleur import Base, DBSession
 from datajongleur.utils.sa import NumpyType, UUID, UUIDMixin
 PREFIX = "beanbag_"
 from datajongleur.addendum.models import Addendum, AddendumBadgeMap
-from datajongleur.utils.sa import addInfoQuantityDBAccess
+from datajongleur.utils.sa import addSimpleDBAccess
 import datajongleur.beanbags.nwu as nwu
 
 def catchAttributeError(func):
@@ -30,7 +30,6 @@ identity_tag_maps = sa.Table(
     sa.Column('identity_uuid', sa.ForeignKey(PREFIX + 'identities.uuid'), primary_key=True),
     sa.Column('tag_uuid', sa.ForeignKey(PREFIX + 'tags.uuid'), primary_key=True))
 
-
 def find_or_create_tag(kw):
     tag = Tag.query.filter_by(name=kw).first()
     if not(tag):
@@ -50,7 +49,7 @@ class Tag(UUIDMixin, Base):
     def __init__(self, name):
         self.name = name
 
-@addInfoQuantityDBAccess
+@addSimpleDBAccess
 class Identity(UUIDMixin, Base):
     __tablename__ = PREFIX + 'identities'
     mtime = sa.Column(
@@ -206,7 +205,7 @@ class Period(nwu.Period, Identity):
         nwu.NumericWithUnits.__init__(self, [self._start, self._stop], self._units)
 
 
-class SampledSignal(nwu.SampledSignal, Identity):
+class SimpleSampledSignal(nwu.SimpleSampledSignal, Identity):
     __tablename__ = PREFIX + 'sampled_signal'
     __mapper_args__ = {'polymorphic_identity': 'SampledSignal'}
     uuid = sa.Column(
@@ -218,7 +217,7 @@ class SampledSignal(nwu.SampledSignal, Identity):
     _signal_base_units = sa.Column('signal_base_units', sa.String)
 
     def __init__(self, *args, **kwargs):
-        nwu.SampledSignal.__init__(self, *args, **kwargs)
+        nwu.SimpleSampledSignal.__init__(self, *args, **kwargs)
         self._signal_base_amount = self.signal_base._amount
         self._signal_base_units = self.signal_base._units
 
@@ -229,7 +228,7 @@ class SampledSignal(nwu.SampledSignal, Identity):
             self._signal_base_amount, self._signal_base_units)
 
 
-class RegularlySampledSignal(nwu.RegularlySampledSignal, Identity):
+class RegularlySimpleSimpleSampledSignal(nwu.RegularlySimpleSampledSignal, Identity):
     """
     Usage: >>> rss = RegularlySampledSignal([1,2,3], 'mV', [0, 5], 'ms')
     """
@@ -245,7 +244,7 @@ class RegularlySampledSignal(nwu.RegularlySampledSignal, Identity):
     _sample_units = sa.Column('time_units', sa.String)
 
     def __init__(self, *args, **kwargs):
-        nwu.RegularlySampledSignal.__init__(self, *args, **kwargs)
+        nwu.RegularlySimpleSampledSignal.__init__(self, *args, **kwargs)
         self._sample_start         = self.start
         self._sample_stop          = self.stop
         self._sample_units    = self.period.units
@@ -258,7 +257,7 @@ class RegularlySampledSignal(nwu.RegularlySampledSignal, Identity):
                 [self._sample_start, self._sample_stop],
                 self._sample_units)
         """
-        nwu.RegularlySampledSignal.__init__(
+        nwu.RegularlySimpleSampledSignal.__init__(
                 self,
                 self._amount,
                 self._units,
