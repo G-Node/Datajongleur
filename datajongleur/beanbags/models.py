@@ -123,14 +123,14 @@ class Identity(UUIDMixin, Base):
 # Beanbags
 ##########
 
-class Quantity(nwu.NumericWithUnits, Identity):
-    __tablename__ = PREFIX + 'quantities'
-    __mapper_args__ = {'polymorphic_identity': 'Quantity'}
-    uuid = sa.Column(
-        sa.ForeignKey(PREFIX + 'identities.uuid'),
-        primary_key=True)
-    _amount = sa.Column('amount', NumpyType)
-    _units = sa.Column('units', sa.String)
+#class Quantity(nwu.NumericWithUnits, Identity):
+#    __tablename__ = PREFIX + 'quantities'
+#    __mapper_args__ = {'polymorphic_identity': 'Quantity'}
+#    uuid = sa.Column(
+#        sa.ForeignKey(PREFIX + 'identities.uuid'),
+#        primary_key=True)
+#    _amount = sa.Column('amount', NumpyType)
+#    _units = sa.Column('units', sa.String)
 
 
 class InfoQuantity(nwu.InfoQuantity, Identity):

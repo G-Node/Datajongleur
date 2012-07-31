@@ -12,7 +12,20 @@ class SpikeTimes(SampledSignal):
         NumericWithUnits.__init__(self, np.ones(len(times)), "")
         self.signal_base = NumericWithUnits(
             times, signal_base_units)
-    
+
+    # ----- Implementing Interval ------
+    @property
+    def start(self):
+        return self.info['signal_base'].min()
+
+    @property
+    def stop(self):
+        return self.info['signal_base'].max()
+
+    @property
+    def length(self):
+        return self.stop - self.start
+
     def checksum_json(self):
         return checksum_json(self)
      

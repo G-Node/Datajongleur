@@ -23,6 +23,7 @@ addendum_addendum_maps = sa.Table(
         sa.ForeignKey(PREFIX + 'addenda.uuid')),
     sa.UniqueConstraint('addendum_uuid', 'addendum_ref_uuid'))
 
+
 class Addendum(UUIDMixin, Base):
     __tablename__ = PREFIX + 'addenda'
     __table_args__ = (

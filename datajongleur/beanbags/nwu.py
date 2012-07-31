@@ -3,71 +3,74 @@ from datajongleur.utils.miscellaneous import kwargs2info_dict
 import datajongleur.beanbags.interfaces as i
 
 import numpy as np
+
 try:
-  from quantities import Quantity
+    from quantities import Quantity
+    #Quantity = None
 except ImportError:
-  Quantity = None
+    print "Could not import quantities. Therefore "
+    Quantity = None
 
 @adapt_numerical_functions
 class NumericWithUnits(object):
-  def __init__(self, amount, units=None):
-    if type(amount)==type(self):
-      assert units==None or units==amount.units
-      self._amount = amount.amount
-      self._units = unicode(amount.units)
-    elif type(amount)==Quantity: # Quantity - if installed, otherwise None
-      assert units==None or units==amount.dimensionality.string
-      self._amount= amount.view(np.ndarray)
-      self._units = unicode(amount.dimensionality.string)
-    else:
-      self._amount = np.array(amount)
-      self._units = unicode(units)
-    if type(self.signal) == Quantity:
-      self._dimensionality = self.signal._dimensionality
-      self.dimensionality = self.signal.dimensionality
-    self._amount.setflags(write='False')
-  
-  @property
-  def signal(self):
-    if Quantity:
-      return Quantity(self._amount, self._units)
-    else:
-      return self._amount
+    def __init__(self, amount, units=None):
+        if type(amount) == type(self):
+            assert units == None or units == amount.units
+            self._amount = amount.amount
+            self._units = unicode(amount.units)
+        elif type(amount) == Quantity: # Quantity - if installed, otherwise None
+            assert units == None or units == amount.dimensionality.string
+            self._amount = amount.view(np.ndarray)
+            self._units = unicode(amount.dimensionality.string)
+        else:
+            self._amount = np.array(amount)
+            self._units = unicode(units)
+        if type(self.signal) == Quantity:
+            self._dimensionality = self.signal._dimensionality
+            self.dimensionality = self.signal.dimensionality
+        self._amount.setflags(write='False')
 
-  @property
-  def amount(self):
-    return self._amount
+    @property
+    def signal(self):
+        if Quantity:
+            return Quantity(self._amount, self._units)
+        else:
+            return self._amount
 
-  @property
-  def units(self):
-    return self._units
+    @property
+    def amount(self):
+        return self._amount
 
-  def __repr__(self):
-    return "%s(%r, %r)" %(
-        self.__class__.__name__,
-        self.amount,
-        self.units)
+    @property
+    def units(self):
+        return self._units
 
-  def __array__(self):
-    """
-    Provide an 'array' view or copy over numeric.samples
+    def __repr__(self):
+        return "%s(%r, %r)" % (
+            self.__class__.__name__,
+            self.amount,
+            self.units)
 
-    Parameters
-    ----------
-    dtype: type, optional
-      If provided, passed to .signal.__array__() call
+    def __array__(self):
+        """
+        Provide an 'array' view or copy over numeric.samples
 
-    *args to mimique numpy.ndarray.__array__ behavior which relies
-    on the actual number of arguments
-    """
-    return self.signal
+        Parameters
+        ----------
+        dtype: type, optional
+          If provided, passed to .signal.__array__() call
 
-  def __array_wrap__(self, out_arr, context=None):
-    my_type = type(context[0](self.signal,out_arr))
-    if hasattr(my_type, 'dimensionality'):
-      return my_type(out_arr, self.units)
-    else:
-      return out_arr
+        *args to mimique numpy.ndarray.__array__ behavior which relies
+        on the actual number of arguments
+        """
+        return self.signal
+
+    def __array_wrap__(self, out_arr, context=None):
+        my_type = type(context[0](self.signal, out_arr))
+        if hasattr(my_type, 'dimensionality'):
+            return my_type(out_arr, self.units)
+        else:
+            return out_arr
 
 
 class InfoQuantity(NumericWithUnits):
@@ -75,25 +78,25 @@ class InfoQuantity(NumericWithUnits):
         NumericWithUnits.__init__(self, amount, units)
         self.info = kwargs2info_dict(kwargs)
 
-    def __str_main__ (self):
+    def __str_main__(self):
         """ Representation of the inherited Quantity-part"""
         return "%r\n" % self.signal
-      
-    def __str_info__ (self):
+
+    def __str_info__(self):
         if len(self.info.keys()) == 0:
-          return ""
+            return ""
         str_info = "Info-Attributes:\n"
         for info_attribute in self.info.iteritems():
-          str_info += " %s: %r\n" %(info_attribute[0], info_attribute[1])
+            str_info += " %s: %r\n" % (info_attribute[0], info_attribute[1])
         return str_info
-      
+
     def __str__(self):
-        head = ">>> %s <<<\n" %(self.__class__.__name__)
+        head = ">>> %s <<<\n" % (self.__class__.__name__)
         str_string = "%s\n%s" % (self.__str_main__(), self.__str_info__())
         return head + str_string[:-1]
 
     def __repr__(self):
-        return "%s(%s, %r, info)" %(
+        return "%s(%s, %r, info)" % (
             self.__class__.__name__,
             self.amount,
             self.units)
@@ -101,7 +104,7 @@ class InfoQuantity(NumericWithUnits):
     @property
     def hash(self):
         return sha1(self.__str__()).hexdigest()
-    
+
     def __hash__(self):
         return self.hash
 
@@ -128,12 +131,13 @@ class TimePoint(InfoQuantity, NumericWithUnits):
 
     def getXML(self):
         from datajongleur.tools.xml_jongleur import dict2xml
+
         xml = dict2xml(d)
         xml.display()
         return xml
 
     def __repr__(self):
-        return "%s(%s, %r)" %(
+        return "%s(%s, %r)" % (
             self.__class__.__name__,
             self.amount,
             self.units)
@@ -142,9 +146,9 @@ class TimePoint(InfoQuantity, NumericWithUnits):
 class Period(InfoQuantity, NumericWithUnits, i.Interval):
     def __init__(self, amount, units=None):
         NumericWithUnits.__init__(self, amount, units)
+        # The following is needed for SQLAlchemy-Mapping.
         self._start = amount[0]
         self._stop = amount[1]
-        self._units = units
 
     @property
     def info(self):
@@ -154,27 +158,27 @@ class Period(InfoQuantity, NumericWithUnits, i.Interval):
 
     def getJSON(self):
         return json.dumps({
-          'start': self.start,
-          'stop': self.stop,
-          'units': self.units})
+            'start': self.start,
+            'stop': self.stop,
+            'units': self.units})
 
     def checksum_json(self):
         return checksum_json(self)
 
     @property
     def start(self):
-        return self._start
+        return self.signal[0]
 
     @property
     def stop(self):
-        return self._stop
+        return self.signal[1]
 
     @property
     def length(self):
         return self.stop - self.start
 
     def __repr__(self):
-        return "%s([%s, %s], %r)" %(
+        return "%s([%s, %s], %r)" % (
             self.__class__.__name__,
             self.start,
             self.stop,
@@ -193,23 +197,11 @@ class SampledSignal(InfoQuantity, NumericWithUnits,
     def info(self):
         return {'signal_base': self.signal_base}
 
-    # ----- Implementing Interval ------
-    @property
-    def start(self):
-        return self.info['signal_base'].min()
-
-    @property
-    def stop(self):
-        return self.info['signal_base'].max()
-
-    @property
-    def length(self):
-        return self.stop - self.start
-
     # ----- Implementing SampledSignal  ------
     @property
     def n_sampling_points(self):
         return len(self)
+
     def getJSON(self):
         return json.dumps({
             'amount': self.start,
@@ -222,7 +214,7 @@ class SampledSignal(InfoQuantity, NumericWithUnits,
         return checksum_json(self)
 
     def __repr__(self):
-        return "%s(%r, %r, %r, %r)" %(
+        return "%s(%r, %r, %r, %r)" % (
             self.__class__.__name__,
             self.amount,
             self.units,
@@ -247,7 +239,7 @@ class RegularlySampledSignal(InfoQuantity, NumericWithUnits,
     @property
     def length(self):
         return self.period.length
-    
+
     @property
     def n_sampling_points(self):
         return len(self.amount)
@@ -255,7 +247,7 @@ class RegularlySampledSignal(InfoQuantity, NumericWithUnits,
     @property
     def sampling_rate(self):
         return (self.n_sampling_points - 1.0) / self.length
-    
+
     @property
     def step_size(self):
         return 1 / self.sampling_rate
@@ -263,10 +255,11 @@ class RegularlySampledSignal(InfoQuantity, NumericWithUnits,
     @property
     def signal_base(self):
         import numpy as np
+
         return NumericWithUnits(
             np.linspace(self.start, self.stop, self.n_sampling_points),
             self.period.units)
-    
-    @property  
+
+    @property
     def checksum_json(self):
         return checksum_json(self)
