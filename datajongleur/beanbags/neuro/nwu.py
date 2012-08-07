@@ -9,9 +9,11 @@ class SpikeTimes(SimpleSampledSignal):
     """
 
     def __init__(self, times, units):
-        NumericWithUnits.__init__(self, np.ones(len(times)), "")
-        self.signal_base = NumericWithUnits(
-            times, signal_base_units)
+        SimpleSampledSignal.__init__(self,
+            np.ones(len(times)),
+            "",
+            times,
+            signal_base_units)
 
     # ----- Implementing Interval ------
     @property

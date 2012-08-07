@@ -47,9 +47,9 @@ class BinnedSpikes(nwu.BinnedSpikes, Identity):
         sa.ForeignKey(Identity.uuid),
         primary_key=True)
     _amount = sa.Column('amount', NumpyType)
+    _units = sa.Column('units', sa.String)
     _start = sa.Column('start', sa.Float)
     _stop = sa.Column('stop', sa.Float)
-    _units = sa.Column('units', sa.String)
 
     def __init__(self, amount, period_amount, period_units):
         nwu.BinnedSpikes.__init__(self, amount, period_amount, period_units)

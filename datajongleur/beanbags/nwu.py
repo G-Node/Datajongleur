@@ -13,6 +13,8 @@ except ImportError:
 
 @adapt_numerical_functions
 class NumericWithUnits(object):
+    #TODO: redesign NumericWithUnits by implementing adapters (-> NumericWithUnits = get_NumericWithUnits(Adapt_ndarray)
+    #Todo: move this to utils
     def __init__(self, amount, units=None):
         if type(amount) == type(self):
             assert units == None or units == amount.units
@@ -109,7 +111,7 @@ class InfoQuantity(NumericWithUnits):
         return self.hash
 
 
-class TimePoint(InfoQuantity, NumericWithUnits):
+class TimePoint(InfoQuantity):
     def __init__(self, amount, units=None):
         NumericWithUnits.__init__(self, amount, units)
 
@@ -143,7 +145,7 @@ class TimePoint(InfoQuantity, NumericWithUnits):
             self.units)
 
 
-class Period(InfoQuantity, NumericWithUnits, i.Interval):
+class Period(InfoQuantity, i.Interval):
     def __init__(self, amount, units=None):
         NumericWithUnits.__init__(self, amount, units)
         # The following is needed for SQLAlchemy-Mapping.
@@ -185,8 +187,7 @@ class Period(InfoQuantity, NumericWithUnits, i.Interval):
             self.units)
 
 
-class SimpleSampledSignal(InfoQuantity, NumericWithUnits,
-    i.SampledSignal):
+class SimpleSampledSignal(InfoQuantity, i.SampledSignal):
     def __init__(self, amount, units, signal_base_amount, signal_base_units):
         NumericWithUnits.__init__(self, amount, units)
         self.signal_base = NumericWithUnits(
@@ -222,8 +223,7 @@ class SimpleSampledSignal(InfoQuantity, NumericWithUnits,
             self.signal_base.units)
 
 
-class RegularlySimpleSampledSignal(InfoQuantity, NumericWithUnits,
-    i.RegularlySampledSignal):
+class RegularlySimpleSampledSignal(InfoQuantity, i.RegularlySampledSignal):
     def __init__(self, amount, units, period_amount, period_units):
         NumericWithUnits.__init__(self, amount, unicode(units))
         self.period = Period(period_amount, unicode(period_units))
