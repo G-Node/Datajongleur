@@ -6,7 +6,11 @@
 Welcome to Datajongleur's documentation!
 ========================================
 
-Contents:
+The big picture (for download):
+
+* :download:`general overview </_download/general_overview.pdf>`
+
+Online documentation:
 
 .. toctree::
    :maxdepth: 2
